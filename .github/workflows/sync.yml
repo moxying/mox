@@ -3,7 +3,7 @@ name: Sync-Code
 on:
   push:
     branches:
-      - main
+      - "**"
 
 jobs:
   push-to-mirror:
