@@ -22,7 +22,7 @@ jobs:
 
       - name: Push to gitcode
         run: |
-          remote_repo="https://${GITCODE_ACCESS_TOKEN}@gitcode.com/${GITCODE_REPOSITORY}.git"
+          remote_repo="https://oauth2:${GITCODE_ACCESS_TOKEN}@gitcode.com/${GITCODE_REPOSITORY}.git"
 
           git remote add gitcode "${remote_repo}"
           git show-ref # useful for debugging
