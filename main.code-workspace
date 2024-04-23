@@ -1,0 +1,15 @@
+{
+  "folders": [
+    {
+      "name": "agent",
+      "path": "agent"
+    },
+    {
+      "name": "ui",
+      "path": "ui"
+    }
+  ],
+  "extensions": {
+    "recommendations": []
+  }
+}

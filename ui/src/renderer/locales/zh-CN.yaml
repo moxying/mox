@@ -1,0 +1,9 @@
+menus:
+  login: '登入'
+
+login:
+  username: '账号'
+  password: '密码'
+
+status:
+  loading: '加载中...'

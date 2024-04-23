@@ -1,0 +1,65 @@
+$app-black-1: rgb(30, 34, 39);
+$app-black-2: rgb(35, 39, 46);
+$app-black-3: rgb(39, 44, 52);
+$app-black-4: rgb(56, 58, 67);
+
+$app-background-color: $app-black-2;
+$app-header-color: $app-black-2;
+$app-sidebar-color: $app-black-2;
+$app-footer-color: $app-black-1;
+
+$app-font-first-color: white;
+$app-font-second-color: #a7b2c1;
+
+$app-input-background: $app-black-3;
+$app-input-border-color: rgb(114, 88, 242);
+
+%app-gradient-bg {
+  background: linear-gradient(
+      81.02deg,
+      rgb(250, 85, 96) -23.47%,
+      rgb(177, 75, 244) 45.52%,
+      rgb(77, 145, 255) 114.8%
+    )
+    border-box border-box;
+}
+
+%app-gradient-bg-text {
+  @extend %app-gradient-bg;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent; /* 使文本颜色透明，只显示背景渐变 */
+}
+
+%app-gradient-border-image {
+  border-image: linear-gradient(
+      to bottom,
+      rgb(250, 85, 96) -23.47%,
+      rgb(177, 75, 244) 45.52%,
+      rgb(77, 145, 255) 114.8%
+    )
+    2 2 2 2;
+}
+
+%app-gradient-button {
+  @extend %app-gradient-bg;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+
+  &:hover {
+    box-shadow: rgba(161, 128, 255, 0.6) 0px 0px calc(1rem) 0px;
+    animation-timing-function: ease-out;
+    animation-duration: 200ms;
+  }
+}
+
+%app-gradient-text {
+  background: linear-gradient(
+      81.02deg,
+      rgb(250, 85, 96) -23.49%,
+      rgb(177, 75, 244) 45.66%,
+      rgb(77, 145, 255) 114.8%
+    )
+    text;
+  color: transparent;
+}

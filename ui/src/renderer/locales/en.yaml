@@ -1,0 +1,9 @@
+menus:
+  login: 'Login'
+
+login:
+  username: 'Username'
+  password: 'Password'
+
+status:
+  loading: 'Loading...'

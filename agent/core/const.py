@@ -1,0 +1,23 @@
+# error code
+ERR_CODE_INTERNAL_ERROR = 10001
+ERR_CODE_INVALID_PARAM = 10002
+ERR_CODE_SERVER_NOT_READY = 10003
+ERR_CODE_SERVER_OVERLOADED = 10004
+ERR_CODE_NOT_FOUND = 10005
+ERR_CODE_HTTP_EXCEPTION = 10005
+
+# config
+CONFIG_FILENAME = "config.yml"
+DEFAULT_CONFIG_FILENAME = "template_config.yml"
+
+# Task Status
+TASK_DOING = "doing"
+TASK_DONE = "done"
+TASK_FAILED = "failed"
+
+# Event Type
+EVENT_TYPE_WS = "ws"
+EVENT_TYPE_INTERNAL_COMFYUI = "internal_comfyui"
+
+# Workers
+WORKER_GEN_IMAGE = "gen_image_worker"

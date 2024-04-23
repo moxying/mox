@@ -1,0 +1,27 @@
+# api server config
+server:
+  debug: False
+  host: "0.0.0.0"
+  port: 7800
+  api_log: True
+  api_auth: False
+  default_admin: "admin:admin123"
+
+# storage config
+storage:
+  output_file_dir: "data/output"
+
+# db config
+db:
+  debug: False
+  sqlite_file: "data/db/main.sqlite"
+
+# comfyui config
+comfyui:
+  endpoint: "61.169.101.67:8067"
+
+# translator
+translator:
+  debug: True
+  device: "cpu"
+  unload_model_seconds: 300

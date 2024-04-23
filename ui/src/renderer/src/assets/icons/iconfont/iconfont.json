@@ -1,0 +1,65 @@
+{
+  "id": "4450905",
+  "name": "mox",
+  "font_family": "iconfont",
+  "css_prefix_text": "icon-",
+  "description": "",
+  "glyphs": [
+    {
+      "icon_id": "7008905",
+      "name": "close",
+      "font_class": "close",
+      "unicode": "e6e9",
+      "unicode_decimal": 59113
+    },
+    {
+      "icon_id": "18442474",
+      "name": "delete",
+      "font_class": "delete",
+      "unicode": "e601",
+      "unicode_decimal": 58881
+    },
+    {
+      "icon_id": "4352520",
+      "name": "loadMore",
+      "font_class": "loadMore",
+      "unicode": "e636",
+      "unicode_decimal": 58934
+    },
+    {
+      "icon_id": "11868243",
+      "name": "骰子",
+      "font_class": "touzi",
+      "unicode": "e600",
+      "unicode_decimal": 58880
+    },
+    {
+      "icon_id": "1221892",
+      "name": "个人",
+      "font_class": "personal",
+      "unicode": "e63f",
+      "unicode_decimal": 58943
+    },
+    {
+      "icon_id": "936760",
+      "name": "配置",
+      "font_class": "config",
+      "unicode": "e62c",
+      "unicode_decimal": 58924
+    },
+    {
+      "icon_id": "5961321",
+      "name": "AI",
+      "font_class": "create",
+      "unicode": "ec5f",
+      "unicode_decimal": 60511
+    },
+    {
+      "icon_id": "15765364",
+      "name": "首页",
+      "font_class": "home",
+      "unicode": "e697",
+      "unicode_decimal": 59031
+    }
+  ]
+}
