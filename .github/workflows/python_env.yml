@@ -34,7 +34,8 @@ jobs:
           echo 'import site' >> ./python310._pth
           curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
           ./python.exe get-pip.py
-          ./python.exe -s -m pip install --upgrade torch torchvision torchaudio xformers
+          ./python.exe -s -m pip install --upgrade torch torchvision torchaudio 
+          ./python.exe -s -m pip install --upgrade xformers
           ./python.exe -s -m pip install -r ../mox/ComfyUI/requirements.txt
           ./python.exe -s -m pip install -r ../mox/mox/agent/requirements.txt
           cd ..
