@@ -34,13 +34,13 @@ jobs:
           echo 'import site' >> ./python310._pth
           curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
           ./python.exe get-pip.py
-          ./python.exe -s -m pip install --upgrade torch torchvision torchaudio 
-          ./python.exe -s -m pip install --upgrade xformers
+          ./python.exe -s -m pip install --upgrade torch==2.2.2 torchvision==0.17.2 torchaudio==2.2.2
+          ./python.exe -s -m pip install --upgrade xformers==0.0.25.post1
           ./python.exe -s -m pip install -r ../mox/ComfyUI/requirements.txt
           ./python.exe -s -m pip install -r ../mox/mox/agent/requirements.txt
           cd ..
 
-          "C:\Program Files\7-Zip\7z.exe" a -tzip python_env_win.zip python_env_win
+          "C:\Program Files\7-Zip\7z.exe" a -tzip mox/python_env_win.zip python_env_win
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
