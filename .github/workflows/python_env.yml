@@ -39,7 +39,7 @@ jobs:
           ./python.exe -s -m pip install -r ../mox/mox/agent/requirements.txt
           cd ..
 
-          zip -q -r python_env_win.zip python_env_win
+          Compress-Archive -Path python_env_win/* -Destination python_env_win.zip
           ls
 
       - name: Upload binaries to release
