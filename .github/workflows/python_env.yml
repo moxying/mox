@@ -1,0 +1,49 @@
+name: Python-Env
+
+on:
+  push:
+    branches:
+      - "dep-package"
+
+jobs:
+  python_env_win:
+    permissions:
+      contents: "write"
+      packages: "write"
+      pull-requests: "read"
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: ${{ github.repository }}
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: comfyanonymous/ComfyUI
+      - shell: bash
+        run: |
+          cd ..
+          ls
+
+          curl https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip -o python-embeded.zip
+          unzip python_embeded.zip -d python_env_win
+          cd python_env_win
+          echo 'import site' >> ./python310._pth
+          curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+          ./python.exe get-pip.py
+          ./python.exe -s -m pip install --upgrade torch torchvision torchaudio xformers
+          ./python.exe -s -m pip install $GITHUB_WORKSPACE/ComfyUI/requirements.txt
+          ./python.exe -s -m pip install $GITHUB_WORKSPACE/mox/agent/requirements.txt
+          cd ..
+
+          zip -q -r python_env_win.zip $GITHUB_WORKSPACE/python_env_win
+          ls
+
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.ADMIN_GITHUB_TOKEN }}
+          file: python_env_win.zip
+          tag: "latest"
+          overwrite: true
