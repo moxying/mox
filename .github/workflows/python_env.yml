@@ -33,11 +33,11 @@ jobs:
           curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
           ./python.exe get-pip.py
           ./python.exe -s -m pip install --upgrade torch torchvision torchaudio xformers
-          ./python.exe -s -m pip install $GITHUB_WORKSPACE/ComfyUI/requirements.txt
-          ./python.exe -s -m pip install $GITHUB_WORKSPACE/mox/agent/requirements.txt
+          ./python.exe -s -m pip install ../ComfyUI/requirements.txt
+          ./python.exe -s -m pip install ../mox/agent/requirements.txt
           cd ..
 
-          zip -q -r python_env_win.zip $GITHUB_WORKSPACE/python_env_win
+          zip -q -r python_env_win.zip python_env_win
           ls
 
       - name: Upload binaries to release
