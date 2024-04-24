@@ -26,8 +26,7 @@ jobs:
           cd ..
           ls
 
-          curl https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip -o python-embeded.zip
-          ls
+          curl https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip -o python_embeded.zip
           unzip python_embeded.zip -d python_env_win
           cd python_env_win
           echo 'import site' >> ./python310._pth
