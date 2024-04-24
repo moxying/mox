@@ -35,8 +35,8 @@ jobs:
           curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
           ./python.exe get-pip.py
           ./python.exe -s -m pip install --upgrade torch torchvision torchaudio xformers
-          ./python.exe -s -m pip install ../ComfyUI/requirements.txt
-          ./python.exe -s -m pip install ../mox/agent/requirements.txt
+          ./python.exe -s -m pip install ../mox/ComfyUI/requirements.txt
+          ./python.exe -s -m pip install ../mox/mox/agent/requirements.txt
           cd ..
 
           zip -q -r python_env_win.zip python_env_win
