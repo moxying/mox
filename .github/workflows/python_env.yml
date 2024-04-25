@@ -77,5 +77,5 @@ jobs:
           python upload_model.py
         env:
           MODELSCOPE_ACCESS_TOKEN: ${{ secrets.MODELSCOPE_ACCESS_TOKEN }}
-          MODELSCOPE_MODEL_ID: "moxying/base-win-model"
-          MODELSCOPE_MODEL_DIR: "model-template"
+          MODELSCOPE_MODEL_ID: moxying/base-win-model-${{ env.python_env_win_version }}
+          MODELSCOPE_MODEL_DIR: model-template

@@ -7,6 +7,10 @@ MODELSCOPE_MODEL_DIR = os.environ["MODELSCOPE_MODEL_DIR"]
 
 api = HubApi()
 api.login(MODELSCOPE_ACCESS_TOKEN)
+try:
+    api.delete_model(model_id=MODELSCOPE_MODEL_ID)
+except Exception:
+    pass
 api.push_model(
     model_id=MODELSCOPE_MODEL_ID,
     model_dir=MODELSCOPE_MODEL_DIR,
