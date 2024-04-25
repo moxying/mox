@@ -12,6 +12,5 @@ try:
 except Exception:
     pass
 api.push_model(
-    model_id=MODELSCOPE_MODEL_ID,
-    model_dir=MODELSCOPE_MODEL_DIR,
+    model_id=MODELSCOPE_MODEL_ID, model_dir=MODELSCOPE_MODEL_DIR, revision="dev"
 )
