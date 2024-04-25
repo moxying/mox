@@ -23,6 +23,7 @@ jobs:
           fetch-depth: 0
           repository: comfyanonymous/ComfyUI
           path: ComfyUI
+          ref: b8218522f112be2e69fd49bbefbe68b57868baa0
       - shell: bash
         run: |
           cd ..
