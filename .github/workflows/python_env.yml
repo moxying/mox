@@ -7,6 +7,7 @@ on:
 
 env:
   python_env_win_version: "v0.0.1"
+  comfyui_commit: "b8218522f112be2e69fd49bbefbe68b57868baa0"
 
 jobs:
   python_env_win:
@@ -28,7 +29,7 @@ jobs:
           fetch-depth: 0
           repository: comfyanonymous/ComfyUI
           path: ComfyUI
-          ref: b8218522f112be2e69fd49bbefbe68b57868baa0
+          ref: ${{ env.comfyui_commit }}
       - name: "package python_env_win"
         shell: bash
         run: |
