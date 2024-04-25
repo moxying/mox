@@ -16,18 +16,21 @@ jobs:
       pull-requests: "read"
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: "checkout mox"
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           repository: ${{ github.repository }}
           path: mox
-      - uses: actions/checkout@v4
+      - name: "checkout ComfyUI"
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           repository: comfyanonymous/ComfyUI
           path: ComfyUI
           ref: b8218522f112be2e69fd49bbefbe68b57868baa0
-      - shell: bash
+      - name: "package python_env_win"
+        shell: bash
         run: |
           cd ..
           ls
@@ -54,19 +57,21 @@ jobs:
           tag: "latest"
           overwrite: true
 
-      - uses: actions/setup-python@v5
+      - name: "prepare python 3.10"
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
           cache: "pip" # caching pip dependencies
-      - shell: bash
+      - name: "upload model to modelscope"
+        shell: bash
         run: |
           pwd
           ls
           pip install modelscope
 
           # ha ha ha ..
-          mv python_env_win_${{ env.python_env_win_version }}.zip mox/mox/tools/modelscope/model-template/config/
-          cd mox/mox/tools/modelscope
+          mv python_env_win_${{ env.python_env_win_version }}.zip mox/tools/modelscope/model-template/config/
+          cd mox/tools/modelscope
           python upload_model.py
         env:
           MODELSCOPE_ACCESS_TOKEN: ${{ secrets.MODELSCOPE_ACCESS_TOKEN }}
