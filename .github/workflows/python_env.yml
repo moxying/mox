@@ -72,7 +72,7 @@ jobs:
 
           # ha ha ha ..
           mv mox/tools/modelscope .
-          mv python_env_win_${{ env.python_env_win_version }}.zip modelscope/model-template/config/
+          mv python_env_win_${{ env.python_env_win_version }}.zip modelscope/model-template/
           cd modelscope
           python upload_model.py
         env:
