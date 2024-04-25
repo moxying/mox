@@ -41,7 +41,7 @@ jobs:
           ./python.exe -s -m pip install -r ../mox/mox/agent/requirements.txt
           cd ..
 
-          "C:\Program Files\7-Zip\7z.exe" a -tzip mox/python_env_win.zip python_env_win
+          "C:\Program Files\7-Zip\7z.exe" a -tzip mox/python_env_win.zip python_env_win/*
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
