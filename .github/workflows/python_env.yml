@@ -5,6 +5,9 @@ on:
     branches:
       - "dep-package"
 
+env:
+  python_env_win_version: "v0.0.1"
+
 jobs:
   python_env_win:
     permissions:
@@ -41,12 +44,31 @@ jobs:
           ./python.exe -s -m pip install -r ../mox/mox/agent/requirements.txt
           cd ..
 
-          "C:\Program Files\7-Zip\7z.exe" a -tzip mox/python_env_win.zip python_env_win/*
+          "C:\Program Files\7-Zip\7z.exe" a -tzip mox/python_env_win_${{ env.python_env_win_version }}.zip python_env_win/*
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.ADMIN_GITHUB_TOKEN }}
-          file: python_env_win.zip
+          file: python_env_win_${{ env.python_env_win_version }}.zip
           tag: "latest"
           overwrite: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip" # caching pip dependencies
+      - shell: bash
+        run: |
+          pwd
+          ls
+          pip install modelscope
+
+          # ha ha ha ..
+          mv python_env_win_${{ env.python_env_win_version }}.zip mox/mox/tools/modelscope/model-template/config/
+          cd mox/mox/tools/modelscope
+          python upload_model.py
+        env:
+          MODELSCOPE_ACCESS_TOKEN: ${{ secrets.MODELSCOPE_ACCESS_TOKEN }}
+          MODELSCOPE_MODEL_ID: "moxying/base-win-model"
+          MODELSCOPE_MODEL_DIR: "model-template"
