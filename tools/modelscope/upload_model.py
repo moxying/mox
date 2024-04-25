@@ -15,5 +15,5 @@ api.push_model(
     model_id=MODELSCOPE_MODEL_ID,
     model_dir=MODELSCOPE_MODEL_DIR,
     lfs_suffix="*.zip",
-    revision="dev",
+    revision="master",
 )
