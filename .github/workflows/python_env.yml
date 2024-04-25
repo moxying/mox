@@ -71,8 +71,9 @@ jobs:
           pip install modelscope
 
           # ha ha ha ..
-          mv python_env_win_${{ env.python_env_win_version }}.zip mox/tools/modelscope/model-template/config/
-          cd mox/tools/modelscope
+          mv mox/tools/modelscope .
+          mv python_env_win_${{ env.python_env_win_version }}.zip modelscope/model-template/config/
+          cd modelscope
           python upload_model.py
         env:
           MODELSCOPE_ACCESS_TOKEN: ${{ secrets.MODELSCOPE_ACCESS_TOKEN }}
