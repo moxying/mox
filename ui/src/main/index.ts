@@ -3,18 +3,19 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { startAgent } from './agent'
+import { launchInit, TOPIC_END, TOPIC_FAILED } from './launch'
 
 console.info('[main]ui start...')
 console.info(`[main]platform: ${process.platform}`)
 
-function createWindow(): void {
+function createWindow(): BrowserWindow {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     show: false,
-    width: 1200,
-    minWidth: 1200,
-    height: 800,
-    minHeight: 800,
+    width: 600,
+    minWidth: 600,
+    height: 300,
+    minHeight: 300,
     titleBarStyle: 'hidden', // more: https://www.electronjs.org/zh/docs/latest/api/frameless-window
     titleBarOverlay: {
       color: 'rgba(0,0,0,0)',
@@ -49,6 +50,8 @@ function createWindow(): void {
     console.debug(`[main]production mode, load mainWindow from ../renderer/index.html}`)
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  return mainWindow
 }
 
 // This method will be called when Electron has finished
@@ -65,25 +68,38 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
+  const mainWindow = createWindow()
 
-  createWindow()
-
-  app.on('activate', function () {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
+  launchInit(mainWindow)
+    .then(() => {
+      // resize window to normal
+      mainWindow.setMinimumSize(1200, 800)
+      mainWindow.setSize(1200, 800)
+      mainWindow.center()
+      // route to home page
+      mainWindow.webContents.send('launch-event', {
+        topic: TOPIC_END
+      })
+      console.info('[main]launchInit success')
+    })
+    .catch((error) => {
+      console.error('[main]launchInit err:', error)
+      setTimeout(() => {
+        mainWindow.webContents.send('launch-event', {
+          topic: TOPIC_FAILED,
+          data: {
+            errMsg: `初始化错误：${error}`
+          }
+        })
+      }, 500)
+    })
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
+  app.quit()
 })
 
 // In this file you can include the rest of your app"s specific main process

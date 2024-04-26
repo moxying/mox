@@ -2,12 +2,27 @@ import { contextBridge, ipcRenderer } from 'electron'
 
 // Custom APIs for renderer
 export const api = {
-  // agent
+  // render => main
+  // render: api.xx
+  // preload: ipcRenderer.send
+  // main: ipcMain.on
+  //
   // startAgent: () => ipcRenderer.send('startAgent'),
   // restartAgent: () => ipcRenderer.send('restartAgent'),
 
-  // system
-  getAppPath: () => ipcRenderer.invoke('getAppPath')
+  // render <=> main
+  // render: api.xx
+  // preload: ipcRenderer.invoke
+  // main: ipcMain.handle
+  //
+  getAppPath: () => ipcRenderer.invoke('getAppPath'),
+
+  // main => render
+  // main: mainWindow.webContents.send
+  // preload: ipcRenderer.on
+  // render: window.api.onXXX
+  //
+  onLaunchEvent: (callback) => ipcRenderer.on('launch-event', (_event, value) => callback(value))
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
@@ -20,8 +35,6 @@ if (process.contextIsolated) {
     console.error(error)
   }
 } else {
-  // @ts-ignore (define in dts)
-  window.electron = electronAPI
   // @ts-ignore (define in dts)
   window.api = api
 }
