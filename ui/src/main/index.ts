@@ -1,21 +1,37 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+
 import icon from '../../resources/icon.png?asset'
-import { startAgent } from './agent'
 import { launchInit, TOPIC_END, TOPIC_FAILED } from './launch'
+import { config } from './config'
+import { printDebugInfo } from './debug'
 
 console.info('[main]ui start...')
 console.info(`[main]platform: ${process.platform}`)
+printDebugInfo()
 
-function createWindow(): BrowserWindow {
+// This method will be called when Electron has finished
+// initialization and is ready to create browser windows.
+// Some APIs can only be used after this event occurs.
+app.whenReady().then(() => {
+  // Set app user model id for windows
+  electronApp.setAppUserModelId('com.electron')
+
+  // Default open or close DevTools by F12 in development
+  // and ignore CommandOrControl + R in production.
+  // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
+  app.on('browser-window-created', (_, window) => {
+    optimizer.watchWindowShortcuts(window)
+  })
+
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     show: false,
-    width: 600,
-    minWidth: 600,
-    height: 300,
-    minHeight: 300,
+    width: config.launch.width,
+    minWidth: config.launch.width,
+    height: config.launch.height,
+    minHeight: config.launch.height,
     titleBarStyle: 'hidden', // more: https://www.electronjs.org/zh/docs/latest/api/frameless-window
     titleBarOverlay: {
       color: 'rgba(0,0,0,0)',
@@ -26,9 +42,6 @@ function createWindow(): BrowserWindow {
       preload: join(__dirname, '../preload/index.js')
     }
   })
-
-  // default max window
-  // mainWindow.maximize()
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
@@ -51,30 +64,11 @@ function createWindow(): BrowserWindow {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
 
-  return mainWindow
-}
-
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
-  // Set app user model id for windows
-  electronApp.setAppUserModelId('com.electron')
-
-  // Default open or close DevTools by F12 in development
-  // and ignore CommandOrControl + R in production.
-  // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
-  app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
-  })
-
-  const mainWindow = createWindow()
-
   launchInit(mainWindow)
     .then(() => {
       // resize window to normal
-      mainWindow.setMinimumSize(1200, 800)
-      mainWindow.setSize(1200, 800)
+      mainWindow.setMinimumSize(config.width, config.height)
+      mainWindow.setSize(config.width, config.height)
       mainWindow.center()
       // route to home page
       mainWindow.webContents.send('launch-event', {
@@ -84,6 +78,9 @@ app.whenReady().then(() => {
     })
     .catch((error) => {
       console.error('[main]launchInit err:', error)
+      if (error.message && error.message.toLowerCase().includes('launch error event sent')) {
+        return
+      }
       setTimeout(() => {
         mainWindow.webContents.send('launch-event', {
           topic: TOPIC_FAILED,
@@ -104,9 +101,6 @@ app.on('window-all-closed', () => {
 
 // In this file you can include the rest of your app"s specific main process
 // code. You can also put them in separate files and require them here.
-
-// start agent
-startAgent()
 
 // get app dir
 ipcMain.handle('getAppPath', () => {
