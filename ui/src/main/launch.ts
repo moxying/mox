@@ -1,14 +1,20 @@
 import { BrowserWindow, app } from 'electron'
 import { is, platform } from '@electron-toolkit/utils'
-import yauzl from 'yauzl'
 import path from 'path'
-import fs from 'fs'
 import semver from 'semver'
 import EventEmitter from 'events'
 import prettyBytes from 'pretty-bytes'
 
 import { config } from './config'
-import { readJSONFile, writeJSONFile, createTempDir, downloadFile, delay } from './util'
+import {
+  readJSONFile,
+  writeJSONFile,
+  createTempDir,
+  downloadFile,
+  delay,
+  calculateSHA256,
+  forceDeleteFile
+} from './util'
 
 export const TOPIC_PROGRESS = 'progress'
 export const TOPIC_FAILED = 'failed'
@@ -30,10 +36,12 @@ export interface LaunchEvent {
 enum Progress {
   CheckGitVersion = 1,
   DownloadGitNewVersion,
+  CheckGitNewVersionSha256,
   ExtractGitNewVersion,
   UpdateGitNewVersion,
   CheckPythonEnvVersion,
-  DownloadPythonEnvNewVerison,
+  DownloadPythonEnvNewVersion,
+  CheckPythonEnvNewVersionSha256,
   UpdatePythonEnvNewVersion
 }
 const ProgressMax = Object.keys(Progress).length / 2
@@ -91,7 +99,6 @@ async function getGitPortableWinVersion() {
 }
 
 async function updateGitPortableWin(mainWindow) {
-  console.log('sss', Progress.CheckGitVersion.valueOf())
   mainWindow.webContents.send('launch-event', {
     topic: TOPIC_PROGRESS,
     data: {
@@ -125,18 +132,17 @@ async function updateGitPortableWin(mainWindow) {
     console.info(
       `[main]git_portable_win need update, cur version is ${curGitPortableWinVersion}, will update to ${config.launch.winResource.git.version}`
     )
-    const tempDir = await createTempDir(path.join(ExtraResourceDir, 'temp-'))
-    const gitDownloadFilename = 'git_portable_win_' + config.launch.winResource.git.version + '.zip'
+    const gitDownloadFilename =
+      'temp_git_portable_win_' + config.launch.winResource.git.version + '.zip'
     const downloadEmitter = new EventEmitter()
     downloadEmitter.on('progress', (e) => {
       const receivedBytes = prettyBytes(e.receivedBytes)
       const totalBytes = prettyBytes(e.totalBytes)
-      const progress = Math.floor((e.receivedBytes * 100) / e.totalBytes)
       mainWindow.webContents.send('launch-event', {
         topic: TOPIC_PROGRESS,
         data: {
           progressTip: '更新Git...',
-          progressDetail: `下载进度：${progress}% (${receivedBytes}/${totalBytes})`,
+          progressDetail: `下载进度：${e.progress}% (${receivedBytes}/${totalBytes})`,
           progressValue: Progress.DownloadGitNewVersion.valueOf(),
           progressMax: ProgressMax
         }
@@ -166,11 +172,40 @@ async function updateGitPortableWin(mainWindow) {
       })
       throw new Error('launch error event sent')
     })
+    const newGitArchiveFilename = path.join(ExtraResourceDir, gitDownloadFilename)
     await downloadFile(
       config.launch.winResource.git.downloadUrl,
-      path.join(tempDir, gitDownloadFilename),
-      downloadEmitter
+      newGitArchiveFilename,
+      downloadEmitter,
+      true
     )
+
+    // check sha256
+    mainWindow.webContents.send('launch-event', {
+      topic: TOPIC_PROGRESS,
+      data: {
+        progressTip: '更新Git...',
+        progressDetail: `检查Sha256.。。`,
+        progressValue: Progress.CheckGitNewVersionSha256.valueOf(),
+        progressMax: ProgressMax
+      }
+    })
+    const newGitArchiveSha256 = await calculateSHA256(newGitArchiveFilename)
+    if (config.launch.winResource.git.sha256 !== newGitArchiveSha256) {
+      await forceDeleteFile(newGitArchiveFilename)
+      mainWindow.webContents.send('launch-event', {
+        topic: TOPIC_PROGRESS,
+        data: {
+          progressTip: '更新Git...',
+          progressDetail: `Git压缩包SHA256检查失败，已删除，请重新启动应用并更新...`,
+          progressValue: Progress.DownloadGitNewVersion.valueOf(),
+          progressMax: ProgressMax
+        }
+      })
+      throw new Error('launch error event sent')
+    }
+    console.info('[main]check git archive sha256 done')
+
     console.info('[main]download git_portable_win success')
   }
 }
