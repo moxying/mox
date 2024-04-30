@@ -3,7 +3,7 @@ name: Python-Env
 on:
   push:
     branches:
-      - "dep-package"
+      - "main"
 
 env:
   python_env_win_version: "v0.0.1"
