@@ -9,6 +9,7 @@ export const api = {
   //
   // startAgent: () => ipcRenderer.send('startAgent'),
   // restartAgent: () => ipcRenderer.send('restartAgent'),
+  openWebsite: (url: string) => ipcRenderer.send('openWebsite', url),
 
   // render <=> main
   // render: api.xx

@@ -1,4 +1,4 @@
-import { BrowserWindow, app } from 'electron'
+import { BrowserWindow, app, shell } from 'electron'
 import { is, platform } from '@electron-toolkit/utils'
 import path from 'path'
 import semver from 'semver'
@@ -221,8 +221,8 @@ async function launchInitWin(mainWindow) {
 
 export async function launchInit(mainWindow: BrowserWindow) {
   if (is.dev) {
-    // await devMockInit(mainWindow)
-    // return
+    await devMockInit(mainWindow)
+    return
   }
 
   if (platform.isLinux) {

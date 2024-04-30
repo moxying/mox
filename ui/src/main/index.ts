@@ -108,3 +108,7 @@ ipcMain.handle('getAppPath', () => {
   console.info('[main]getAppPath exec: ', appPath)
   return appPath
 })
+
+ipcMain.on('openWebsite', (event, url) => {
+  shell.openExternal(url)
+})

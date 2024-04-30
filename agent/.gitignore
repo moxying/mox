@@ -160,3 +160,4 @@ tags
 nohup.out
 tmp
 config.yml
+models/translation/*

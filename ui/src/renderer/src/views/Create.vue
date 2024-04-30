@@ -86,7 +86,7 @@ const genRandomPrompt = async () => {
 // create
 const prompt = ref('')
 const negativePrompt = ref('')
-const batchSize = ref(8)
+const batchSize = ref(1)
 const width = ref(1024)
 const height = ref(1024)
 const seed = ref(0)
