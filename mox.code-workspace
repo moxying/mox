@@ -7,6 +7,14 @@
     {
       "name": "ui",
       "path": "ui"
+    },
+    {
+      "name": "tools",
+      "path": "tools"
+    },
+    {
+      "name": ".github",
+      "path": ".github"
     }
   ],
   "extensions": {
