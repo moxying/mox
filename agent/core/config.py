@@ -49,10 +49,24 @@ class ConfigMgr:
             else:
                 return {}
 
-    def update_conf(self, key: str, value: any):
+    def update_conf(self, key: str, value: dict):
         with self._lock:
             if key not in self._conf:
                 return
-            self._conf[key] = value
-            with open(CONFIG_FILENAME, "w") as f:
-                yaml.dump(self._conf, f)
+            keyUpdate = False
+            oldValue = self._conf[key]
+            for k, v in value.items():
+                if k in oldValue and v != oldValue[k]:
+                    oldV = oldValue[k]
+                    self._conf[key][k] = v
+                    keyUpdate = True
+                    logging.info(
+                        f"update_conf, key: {key}, k: {k}, v update from {oldV} to {v}"
+                    )
+                elif k not in oldValue:
+                    self._conf[key][k] = v
+                    keyUpdate = True
+                    logging.info(f"update_conf, key: {key}, new k: {k}, new v: {v}")
+            if keyUpdate:
+                with open(CONFIG_FILENAME, "w") as f:
+                    yaml.dump(self._conf, f)

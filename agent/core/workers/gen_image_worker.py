@@ -37,9 +37,7 @@ class GenImageWorker(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self, name="GenImageWorker")
         self.task_queue = Queue()
-        self.comfyui_client = ComfyUIClient(
-            server_address=ConfigMgr().get_conf("comfyui")["endpoint"]
-        )
+        self.comfyui_client = ComfyUIClient()
         self.progress_value = 0
 
     def run(self):

@@ -4,6 +4,8 @@ import os
 from typing import List, Optional
 from pydantic import BaseModel
 
+from core.config import ConfigMgr
+
 
 class UploadImageResponse(BaseModel):
     name: str
@@ -46,19 +48,20 @@ class PostPromptResponse(BaseModel):
 
 
 class BasicClient:
-    def __init__(self, server_address: str, client_id: str) -> None:
+    def __init__(self, client_id: str) -> None:
         self.client_id = client_id
-        self.server_address = server_address
         self.session = requests.Session()
 
     def get_embeddings_api(self) -> List:
-        resp = self.session.get(f"http://{self.server_address}/embeddings")
+        server_address = ConfigMgr().get_conf("comfyui")["endpoint"]
+        resp = self.session.get(f"http://{server_address}/embeddings")
         if resp.status_code != 200:
             raise Exception(f"get_embeddings_api failed: {resp.json()}")
         return resp.json()
 
     def get_extensions_api(self) -> List:
-        resp = self.session.get(f"http://{self.server_address}/extensions")
+        server_address = ConfigMgr().get_conf("comfyui")["endpoint"]
+        resp = self.session.get(f"http://{server_address}/extensions")
         if resp.status_code != 200:
             raise Exception(f"get_extensions_api failed: {resp.json()}")
         return resp.json()
@@ -81,8 +84,9 @@ class BasicClient:
             files["overwrite"] = overwrite
         if type:
             files["type"] = type
+        server_address = ConfigMgr().get_conf("comfyui")["endpoint"]
         resp = self.session.post(
-            f"http://{self.server_address}/upload/image",
+            f"http://{server_address}/upload/image",
             files=files,
         )
         if resp.status_code != 200:
@@ -105,8 +109,8 @@ class BasicClient:
             "type": type,
             "subfolder": subfolder,
         }
-
-        resp = self.session.get(f"http://{self.server_address}/view", params=params)
+        server_address = ConfigMgr().get_conf("comfyui")["endpoint"]
+        resp = self.session.get(f"http://{server_address}/view", params=params)
         if resp.status_code != 200:
             raise Exception(f"view_image_api failed: {resp.json()}")
         return resp.content
@@ -115,27 +119,29 @@ class BasicClient:
         raise NotImplementedError()
 
     def get_system_stats_api(self) -> SystemStatsResponse:
-        resp = self.session.get(f"http://{self.server_address}/system_stats")
+        server_address = ConfigMgr().get_conf("comfyui")["endpoint"]
+        resp = self.session.get(f"http://{server_address}/system_stats")
         if resp.status_code != 200:
             raise Exception(f"get_system_stats_api failed: {resp.json()}")
         return SystemStatsResponse.model_validate(resp.json())
 
     def get_prompt_api(self) -> GetPromptResponse:
-        resp = self.session.get(f"http://{self.server_address}/prompt")
+        server_address = ConfigMgr().get_conf("comfyui")["endpoint"]
+        resp = self.session.get(f"http://{server_address}/prompt")
         if resp.status_code != 200:
             raise Exception(f"get_prompt_api failed: {resp.json()}")
         return GetPromptResponse.model_validate(resp.json())
 
     def get_object_info_api(self):
-        resp = self.session.get(f"http://{self.server_address}/object_info")
+        server_address = ConfigMgr().get_conf("comfyui")["endpoint"]
+        resp = self.session.get(f"http://{server_address}/object_info")
         if resp.status_code != 200:
             raise Exception(f"get_object_info_api failed: {resp.json()}")
         return resp.json()
 
     def get_object_info_node_api(self, node_class: str):
-        resp = self.session.get(
-            f"http://{self.server_address}/object_info/{node_class}"
-        )
+        server_address = ConfigMgr().get_conf("comfyui")["endpoint"]
+        resp = self.session.get(f"http://{server_address}/object_info/{node_class}")
         if resp.status_code != 200:
             raise Exception(f"get_object_info_node_api failed: {resp.json()}")
         return resp.json()
@@ -144,19 +150,22 @@ class BasicClient:
         params = {}
         if max_items:
             params["max_items"] = max_items
-        resp = self.session.get(f"http://{self.server_address}/history", params=params)
+        server_address = ConfigMgr().get_conf("comfyui")["endpoint"]
+        resp = self.session.get(f"http://{server_address}/history", params=params)
         if resp.status_code != 200:
             raise Exception(f"get_history_api failed: {resp.json()}")
         return resp.json()
 
     def get_history_by_prompt_id_api(self, prompt_id: str):
-        resp = self.session.get(f"http://{self.server_address}/history/{prompt_id}")
+        server_address = ConfigMgr().get_conf("comfyui")["endpoint"]
+        resp = self.session.get(f"http://{server_address}/history/{prompt_id}")
         if resp.status_code != 200:
             raise Exception(f"get_history_api failed: {resp.json()}")
         return resp.json()
 
     def get_queue_api(self):
-        resp = self.session.get(f"http://{self.server_address}/queue")
+        server_address = ConfigMgr().get_conf("comfyui")["endpoint"]
+        resp = self.session.get(f"http://{server_address}/queue")
         if resp.status_code != 200:
             raise Exception(f"get_queue_api failed: {resp.json()}")
         return resp.json()
@@ -170,7 +179,8 @@ class BasicClient:
     ) -> PostPromptResponse:
         p = {"prompt": prompt_json, "client_id": self.client_id}
         data = json.dumps(p).encode("utf-8")
-        resp = self.session.post(f"http://{self.server_address}/prompt", data=data)
+        server_address = ConfigMgr().get_conf("comfyui")["endpoint"]
+        resp = self.session.post(f"http://{server_address}/prompt", data=data)
         if resp.status_code != 200:
             raise Exception(
                 f"post_prompt_api failed, status_code: {resp.status_code}, {resp}"
@@ -194,9 +204,8 @@ if __name__ == "__main__":
     print(f"basic comfyui client test")
     os.makedirs("tmp", exist_ok=True)
 
-    server_address = "127.0.0.1:8188"
     client_id = "test_client_id"
-    basic_client = BasicClient(server_address=server_address, client_id=client_id)
+    basic_client = BasicClient(client_id=client_id)
 
     # get_embeddings
     embeddings: List = basic_client.get_embeddings_api()

@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 
 from core.config import ConfigMgr
 from core.models.common import *
+from core.models.config import *
 from core.models.gen_image import *
 from core.models.gen_image_db import *
 from core.workers.gen_image_worker import GenImageWorker, GenImageTask
@@ -34,8 +35,12 @@ class Server(BasicServer):
         self.add_api_websocket_route("/ws", self.ws)
 
         # init router http
+
         # 获取配置
         self.add_api_route("/api/config", self.api_get_config, methods=["GET"])
+        # 更新配置
+        self.add_api_route("/api/config", self.api_update_config, methods=["PUT"])
+
         # 获取output内的文件
         self.add_api_route(
             "/api/file/output/{filename}", self.api_get_output_file, methods=["GET"]
@@ -90,6 +95,9 @@ class Server(BasicServer):
 
     def api_get_config(self):
         return ConfigMgr().conf()
+
+    def api_update_config(self, request: UpdateConfigRequest):
+        return CommonResponse(data="done")
 
     def api_get_output_file(self, filename: str, request: Request):
         file_storage_dir = ConfigMgr().get_conf("storage")["output_file_dir"]

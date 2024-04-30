@@ -10,6 +10,7 @@ from core.const import *
 from core.models.common import WSEvent
 from core.models.gen_image import *
 from core.server.event import EventDispatcher
+from core.config import ConfigMgr
 
 NAME_SUBMIT_TASK = "任务提交ComfyUI"
 NAME_TASK_NODE_CACHED = "节点任务使用缓存"
@@ -20,10 +21,9 @@ NAME_TASK_FAILED = "ComfyUI执行失败"
 
 
 class ComfyUIClient(BasicClient):
-    def __init__(self, server_address: str) -> None:
+    def __init__(self) -> None:
         client_id = str(uuid.uuid4())
-        super().__init__(server_address, client_id)
-        logging.info(f"comfyui client init done: {server_address}")
+        super().__init__(client_id)
 
     def _update_progress(self, event_data: ComfyUIEventData):
         EventDispatcher().dispatch_event(
@@ -55,7 +55,8 @@ class ComfyUIClient(BasicClient):
     def _ws_handle_progress(self, prompt_id: str, task_uuid: str, prompt_json):
         # setup websocket
         ws = websocket.WebSocket()
-        ws.connect(f"ws://{self.server_address}/ws?clientId={self.client_id}")
+        server_address = ConfigMgr().get_conf("comfyui")["endpoint"]
+        ws.connect(f"ws://{server_address}/ws?clientId={self.client_id}")
         logging.debug(f"[comfyui]ws connect done, client_id: {self.client_id}")
         progress_value_max = len(prompt_json.keys()) + 2
         while True:
