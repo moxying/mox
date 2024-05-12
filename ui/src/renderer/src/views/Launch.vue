@@ -21,7 +21,7 @@ const TOPIC_PROGRESS = 'progress'
 const TOPIC_FAILED = 'failed'
 const TOPIC_END = 'end'
 window.api.onLaunchEvent((e: LaunchEvent) => {
-  console.log('onLaunchEvent', e)
+  console.log('launch event', e)
   switch (e.topic) {
     case TOPIC_PROGRESS:
       progressTip.value = e.data.progressTip

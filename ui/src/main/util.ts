@@ -23,7 +23,7 @@ export async function readJSONFile(filename: string): Promise<any> {
 
 export async function writeJSONFile(filename: string, data: any): Promise<void> {
   return new Promise((resolve, reject) => {
-    fs.writeFile(filename, JSON.stringify(data, null, 2), (err) => {
+    fs.writeFile(filename, JSON.stringify(data, null, 2), { flag: 'w' }, (err) => {
       if (err) {
         reject(err)
       } else {
@@ -176,6 +176,26 @@ export async function forceDeleteFile(filename) {
   })
 }
 
+// 强制删除文件夹
+export async function forceDeleteDir(dir, ignoreErr) {
+  return new Promise<void>((resolve, reject) => {
+    fs.rm(dir, { recursive: true, force: true }, (err) => {
+      if (err && !ignoreErr) {
+        if (err.code === 'ENOENT') {
+          // 文件夹不存在，不需要删除
+          resolve()
+        } else {
+          // 其他错误，拒绝删除
+          reject(err)
+        }
+      } else {
+        // 文件夹删除成功
+        resolve()
+      }
+    })
+  })
+}
+
 // 解压zip文件并获取解压进度
 export async function extractZip(zipPath, destPath, emitter) {
   return new Promise<void>((resolve, reject) => {
@@ -185,6 +205,7 @@ export async function extractZip(zipPath, destPath, emitter) {
       if (err) reject(err)
 
       zipFile.readEntry()
+      fs.mkdirSync(destPath, { recursive: true })
 
       zipFile.on('entry', (entry) => {
         const entryPath = path.join(destPath, entry.fileName)

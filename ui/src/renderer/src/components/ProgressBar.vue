@@ -10,7 +10,7 @@ const props = defineProps({
 const fillerStyles = computed(() => {
   return {
     height: '100%',
-    width: `${props.completed}%`,
+    width: `${(props.completed || 0) > 4 ? props.completed || 0 : 4}%`,
     transition: 'width 100ms ease-in-out',
     borderRadius: 'inherit',
     textAlign: 'right'

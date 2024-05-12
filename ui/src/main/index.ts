@@ -6,9 +6,11 @@ import icon from '../../resources/icon.png?asset'
 import { launchInit, TOPIC_END, TOPIC_FAILED } from './launch'
 import { config } from './config'
 import { printDebugInfo } from './debug'
+import { initUnhandled } from './unhandled'
 
 console.info('[main]ui start...')
 console.info(`[main]platform: ${process.platform}`)
+initUnhandled()
 printDebugInfo()
 
 // This method will be called when Electron has finished

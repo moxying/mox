@@ -46,6 +46,9 @@ devDependencies:
   axios:
     specifier: ^1.6.8
     version: 1.6.8
+  clean-stack:
+    specifier: ^5.2.0
+    version: 5.2.0
   dayjs:
     specifier: ^1.11.10
     version: 1.11.10
@@ -64,6 +67,9 @@ devDependencies:
   element-plus:
     specifier: ^2.5.6
     version: 2.5.6(vue@3.4.18)
+  ensure-error:
+    specifier: ^4.0.0
+    version: 4.0.0
   eslint:
     specifier: ^8.56.0
     version: 8.56.0
@@ -1891,6 +1897,13 @@ packages:
     engines: {node: '>=8'}
     dev: true
 
+  /clean-stack@5.2.0:
+    resolution: {integrity: sha512-TyUIUJgdFnCISzG5zu3291TAsE77ddchd0bepon1VVQrKLGKFED4iXFEDQ24mIPdPBbyE16PK3F8MYE1CmcBEQ==}
+    engines: {node: '>=14.16'}
+    dependencies:
+      escape-string-regexp: 5.0.0
+    dev: true
+
   /cli-truncate@2.1.0:
     resolution: {integrity: sha512-n8fOixwDD6b/ObinzTrp1ZKFzbgvKZvuz/TvejnLn1aQfC6r52XEx85FmuC+3HI+JM7coBRXUvNqEU2PHVrHpg==}
     engines: {node: '>=8'}
@@ -2305,6 +2318,11 @@ packages:
     dependencies:
       once: 1.4.0
 
+  /ensure-error@4.0.0:
+    resolution: {integrity: sha512-7Xenn3+R6tp2UqAbH9Jqs6QCSABQok+1VAhaPaF0jjm3iuhVHCblfBh18nYtpm3K9/V4Jpxz1JIqFZyrjstBtw==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+    dev: true
+
   /entities@4.5.0:
     resolution: {integrity: sha512-V0hjH4dGPh9Ao5p0MoRY6BVqtwCjhz6vI5LT8AJ55H+4g9/4vbHx1I54fS0XuclLhDHArPQCiMjDxjaL8fPxhw==}
     engines: {node: '>=0.12'}
@@ -2385,6 +2403,11 @@ packages:
   /escape-string-regexp@4.0.0:
     resolution: {integrity: sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==}
     engines: {node: '>=10'}
+
+  /escape-string-regexp@5.0.0:
+    resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
+    engines: {node: '>=12'}
+    dev: true
 
   /eslint-config-prettier@9.1.0(eslint@8.56.0):
     resolution: {integrity: sha512-NSWl5BFQWEPi1j4TjVNItzYV7dZXZ+wP6I6ZhrBGpChQhZRUaElihE9uRRkcbRnNb76UMKDF3r+WTmNcGPKsqw==}

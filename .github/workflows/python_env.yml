@@ -46,17 +46,8 @@ jobs:
           ./python.exe -s -m pip install --upgrade xformers==0.0.25.post1
           ./python.exe -s -m pip install -r ../mox/ComfyUI/requirements.txt
           ./python.exe -s -m pip install -r ../mox/mox/agent/requirements.txt
+          "C:\Program Files\7-Zip\7z.exe" a -tzip mox/python_env_win_${{ env.python_env_win_version }}.zip ./*
           cd ..
-
-          "C:\Program Files\7-Zip\7z.exe" a -tzip mox/python_env_win_${{ env.python_env_win_version }}.zip python_env_win/*
-
-      - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.ADMIN_GITHUB_TOKEN }}
-          file: python_env_win_${{ env.python_env_win_version }}.zip
-          tag: "latest"
-          overwrite: true
 
       - name: "prepare python 3.10"
         uses: actions/setup-python@v5
@@ -72,7 +63,7 @@ jobs:
 
           # ha ha ha ..
           mv mox/tools/modelscope .
-          mv python_env_win_${{ env.python_env_win_version }}.zip modelscope/model-template/
+          mv python_env_win/python_env_win_${{ env.python_env_win_version }}.zip modelscope/model-template/
           cd modelscope
           python upload_model.py
         env:
