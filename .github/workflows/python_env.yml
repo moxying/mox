@@ -46,7 +46,7 @@ jobs:
           ./python.exe -s -m pip install --upgrade xformers==0.0.25.post1
           ./python.exe -s -m pip install -r ../mox/ComfyUI/requirements.txt
           ./python.exe -s -m pip install -r ../mox/mox/agent/requirements.txt
-          "C:\Program Files\7-Zip\7z.exe" a -tzip mox/python_env_win_${{ env.python_env_win_version }}.zip ./*
+          "C:\Program Files\7-Zip\7z.exe" a -tzip ../mox/python_env_win_${{ env.python_env_win_version }}.zip ./*
           cd ..
 
       - name: "prepare python 3.10"
@@ -63,7 +63,7 @@ jobs:
 
           # ha ha ha ..
           mv mox/tools/modelscope .
-          mv python_env_win/python_env_win_${{ env.python_env_win_version }}.zip modelscope/model-template/
+          mv python_env_win_${{ env.python_env_win_version }}.zip modelscope/model-template/
           cd modelscope
           python upload_model.py
         env:
