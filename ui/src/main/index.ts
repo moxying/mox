@@ -61,6 +61,7 @@ app.whenReady().then(() => {
       `[main]dev mode, load mainWindow by loadURL from ${process.env['ELECTRON_RENDERER_URL']}`
     )
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+    mainWindow.webContents.openDevTools()
   } else {
     console.debug(`[main]production mode, load mainWindow from ../renderer/index.html}`)
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))

@@ -196,6 +196,16 @@ export async function forceDeleteDir(dir, ignoreErr) {
   })
 }
 
+export function renameAndReplaceDirectorySync(src, dest) {
+  // 删除目标目录及其所有内容
+  if (fs.existsSync(dest)) {
+    fs.rmSync(dest, { recursive: true, force: true })
+  }
+
+  // 重命名源目录为目标目录
+  fs.renameSync(src, dest)
+}
+
 // 解压zip文件并获取解压进度
 export async function extractZip(zipPath, destPath, emitter) {
   return new Promise<void>((resolve, reject) => {
