@@ -1,26 +1,26 @@
 {
-  "17": {
+  "3": {
     "inputs": {
-      "seed": 15144130636034,
+      "seed": 33960632296951,
       "steps": 5,
       "cfg": 2,
       "sampler_name": "dpmpp_sde",
       "scheduler": "normal",
       "denoise": 1,
       "model": [
-        "23",
+        "4",
         0
       ],
       "positive": [
-        "19",
+        "6",
         0
       ],
       "negative": [
-        "20",
+        "7",
         0
       ],
       "latent_image": [
-        "18",
+        "5",
         0
       ]
     },
@@ -29,7 +29,16 @@
       "title": "KSampler"
     }
   },
-  "18": {
+  "4": {
+    "inputs": {
+      "ckpt_name": "juggernautXL_v9Rdphoto2Lightning.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint"
+    }
+  },
+  "5": {
     "inputs": {
       "width": 1024,
       "height": 1024,
@@ -40,11 +49,11 @@
       "title": "Empty Latent Image"
     }
   },
-  "19": {
+  "6": {
     "inputs": {
-      "text": "1man,Final Fantasy",
+      "text": "one man",
       "clip": [
-        "23",
+        "4",
         1
       ]
     },
@@ -53,11 +62,11 @@
       "title": "CLIP Text Encode (Prompt)"
     }
   },
-  "20": {
+  "7": {
     "inputs": {
-      "text": "",
+      "text": "text, watermark",
       "clip": [
-        "23",
+        "4",
         1
       ]
     },
@@ -66,14 +75,14 @@
       "title": "CLIP Text Encode (Prompt)"
     }
   },
-  "21": {
+  "8": {
     "inputs": {
       "samples": [
-        "17",
+        "3",
         0
       ],
       "vae": [
-        "23",
+        "4",
         2
       ]
     },
@@ -82,25 +91,16 @@
       "title": "VAE Decode"
     }
   },
-  "22": {
+  "10": {
     "inputs": {
       "images": [
-        "21",
+        "8",
         0
       ]
     },
     "class_type": "PreviewImage",
     "_meta": {
       "title": "Preview Image"
-    }
-  },
-  "23": {
-    "inputs": {
-      "ckpt_name": "juggernautXL_v9Rdphoto2Lightning.safetensors"
-    },
-    "class_type": "CheckpointLoaderSimple",
-    "_meta": {
-      "title": "Load Checkpoint"
     }
   }
 }

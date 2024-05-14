@@ -45,8 +45,10 @@ class Server(BasicServer):
         self.add_api_route(
             "/api/file/output/{filename}", self.api_get_output_file, methods=["GET"]
         )
-        # 创作图片
-        self.add_api_route("/api/image/create", self.api_gen_image, methods=["POST"])
+
+        # txt2img
+        self.add_api_route("/api/image/txt2img", self.api_txt2img, methods=["POST"])
+
         # 获取图片列表
         self.add_api_route("/api/image/list", self.api_get_image_list, methods=["POST"])
         # 按日期分类的图片列表
@@ -105,7 +107,7 @@ class Server(BasicServer):
             path=f"{file_storage_dir}/{filename}", media_type="image/png"
         )
 
-    def api_gen_image(self, request: GenImageRequest) -> GenImageResponse:
+    def api_txt2img(self, request: Txt2imgRequest) -> Txt2imgResponse:
 
         task_uuid = str(uuid.uuid4())
         gen_image_worker: GenImageWorker = self.workers[WORKER_GEN_IMAGE]
@@ -121,7 +123,7 @@ class Server(BasicServer):
             )
         )
 
-        return GenImageResponse(data=GenImageResponseData(task_uuid=task_uuid))
+        return Txt2imgResponse(data=Txt2imgResponseData(task_uuid=task_uuid))
 
     def api_get_image_list(self, request: GetImageListRequest):
         list, total = get_sd_image_list_db(

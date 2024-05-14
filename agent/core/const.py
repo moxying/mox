@@ -11,9 +11,12 @@ CONFIG_FILENAME = "config.yml"
 DEFAULT_CONFIG_FILENAME = "template_config.yml"
 
 # Task Status
+TASK_PENDING = "pending"
 TASK_DOING = "doing"
 TASK_DONE = "done"
 TASK_FAILED = "failed"
+TASK_CANCELED = "canceled"
+TASK_STOPPED = "stopped"
 
 # Event Type
 EVENT_TYPE_WS = "ws"

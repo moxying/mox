@@ -25,21 +25,27 @@ class GenImageEvent(WSEvent):
     data: GenImageEventData
 
 
-class GenImageRequest(BaseModel):
-    prompt: str
+class Txt2imgRequest(BaseModel):
+    origin_prompt: str
+    ckpt_name: str
     negative_prompt: Optional[str] = ""
-    batch_size: Optional[int] = 1
-    width: Optional[int] = 512
-    height: Optional[int] = 768
     seed: Optional[int] = 0
+    steps: Optional[int] = 5
+    cfg: Optional[float] = 2.0
+    sampler_name: Optional[str] = "dpmpp_sde"
+    scheduler: Optional[str] = "scheduler"
+    denoise: Optional[float] = 1.0
+    batch_size: Optional[int] = 4
+    width: Optional[int] = 1024
+    height: Optional[int] = 1024
 
 
-class GenImageResponseData(BaseModel):
+class Txt2imgResponseData(BaseModel):
     task_uuid: str
 
 
-class GenImageResponse(CommonResponse):
-    data: Optional[GenImageResponseData] = None
+class Txt2imgResponse(CommonResponse):
+    data: Optional[Txt2imgResponseData] = None
 
 
 class SDImage(BaseModel):
@@ -51,19 +57,39 @@ class SDImage(BaseModel):
     name: str
     time_cost: int
     origin_prompt: str
+    image_file_deleted: bool
+    task_type: str
+    task_tags: Optional[List[str]] = None
+
     prompt: str
     negative_prompt: Optional[str] = None
     width: Optional[int] = 0
     height: Optional[int] = 0
     seed: Optional[int] = 0
     steps: Optional[int] = 0
-    cfg: Optional[float] = 0
+    cfg: Optional[float] = 0.0
     sampler_name: Optional[str] = None
     scheduler: Optional[str] = None
+    denoise: Optional[float] = 0.0
     ckpt_name: Optional[str] = None
 
     class Config:
         from_attributes = True
+
+
+class GenImageTask(BaseModel):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+    task_uuid: str
+    task_type: str
+    task_tags: Optional[List[str]] = None
+    task_status: str
+    err_msg: Optional[str] = None
+    origin_prompt: str
+    batch_size: int
+
+    result_images: Optional[List[SDImage]] = None
 
 
 class GenImageResultRequest(BaseModel):

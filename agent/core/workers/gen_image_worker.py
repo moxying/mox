@@ -109,6 +109,7 @@ class GenImageWorker(threading.Thread):
                     cfg=basic_sdxl_jxl_task_result.cfg,
                     sampler_name=basic_sdxl_jxl_task_result.sampler_name,
                     scheduler=basic_sdxl_jxl_task_result.scheduler,
+                    denoise=basic_sdxl_jxl_task_result.denoise,
                     ckpt_name=basic_sdxl_jxl_task_result.ckpt_name,
                 )
                 images.append(image_name)
