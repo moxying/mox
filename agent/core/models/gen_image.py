@@ -25,6 +25,13 @@ class GenImageEvent(WSEvent):
     data: GenImageEventData
 
 
+class ImageCollection(BaseModel):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+    name: str
+
+
 class Txt2imgRequest(BaseModel):
     origin_prompt: str
     ckpt_name: str
@@ -53,8 +60,7 @@ class SDImage(BaseModel):
     created_at: datetime
     updated_at: datetime
     uuid: str
-    task_uuid: str
-    name: str
+    format: str
     time_cost: int
     origin_prompt: str
     image_file_deleted: bool

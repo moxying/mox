@@ -3,6 +3,7 @@ from typing import Dict, List, Union, Any, Optional
 from sqlalchemy import Integer, String, ForeignKey, DateTime, Boolean, Float, ARRAY
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 from sqlalchemy.dialects.sqlite import TEXT
+import uuid
 
 from core.db.common import Base
 from core.db.db import get_session
@@ -10,11 +11,16 @@ from core.const import *
 from .gen_image import *
 
 
+class ImageCollectionDB(Base):
+    __tablename__ = "image_collection"
+
+    name: Mapped[String] = mapped_column(String(256), default="", unique=True)
+
+
 class GenImageTaskDB(Base):
 
     __tablename__ = "gen_image_task"
 
-    task_uuid: Mapped[String] = mapped_column(String(64))
     task_type: Mapped[String] = mapped_column(String(64), default="")
     task_tags: Mapped[ARRAY[String]] = mapped_column(ARRAY[String(64)], default=[])
     task_status: Mapped[String] = mapped_column(String(64), default="")
@@ -41,14 +47,14 @@ class GenImageTaskDB(Base):
 class SDImageDB(Base):
     __tablename__ = "sd_image"
 
-    uuid: Mapped[String] = mapped_column(String(64))
-    task_uuid: Mapped[String] = mapped_column(String(64))
-    name: Mapped[String] = mapped_column(String(512), default="")
+    uuid: Mapped[String] = mapped_column(String(64), index=True)
+    format: Mapped[String] = mapped_column(String(512), default="")
     time_cost: Mapped[Integer] = mapped_column(Integer, default=0)
     origin_prompt: Mapped[TEXT] = mapped_column(TEXT, default="")
     image_file_deleted: Mapped[Boolean] = mapped_column(Boolean, default=False)
     task_type: Mapped[String] = mapped_column(String(64), default="")
     task_tags: Mapped[ARRAY[String]] = mapped_column(ARRAY[String(64)], default=[])
+    collections: Mapped[ARRAY[String]] = mapped_column(ARRAY[String(256)], default=[])
 
     prompt: Mapped[TEXT] = mapped_column(TEXT, default="")
     negative_prompt: Mapped[TEXT] = mapped_column(TEXT, default="")
@@ -66,7 +72,6 @@ class SDImageDB(Base):
 
 
 def add_gen_image_task_db(
-    task_uuid: str,
     task_type: str,
     task_tags: List[str],
     origin_prompt: str,
@@ -81,10 +86,9 @@ def add_gen_image_task_db(
     scheduler: str,
     denoise: float,
     ckpt_name: str,
-):
+) -> int:
     with get_session() as s:
         gen_image_task = GenImageTaskDB()
-        gen_image_task.task_uuid = task_uuid
         gen_image_task.task_type = task_type
         gen_image_task.task_tags = task_tags
         gen_image_task.task_status = TASK_DOING
@@ -103,6 +107,7 @@ def add_gen_image_task_db(
 
         s.add(gen_image_task)
         s.commit()
+        return gen_image_task.id
 
 
 def get_gen_image_task_list_db(
@@ -129,10 +134,9 @@ def get_gen_image_task_list_db(
         )
 
 
-def add_sd_image_db(
-    uuid: str,
-    task_uuid: str,
-    name: str,
+def add_sd_images_db(
+    uuid_list: List[str],
+    format: str,
     time_cost: int,
     origin_prompt: str,
     prompt: str,
@@ -146,32 +150,44 @@ def add_sd_image_db(
     scheduler: str,
     denoise: float,
     ckpt_name: str,
+    gen_image_task_id: int,
 ):
     with get_session() as s:
-        sd_image = SDImageDB(
-            uuid=uuid,
-            task_uuid=task_uuid,
-            name=name,
-            time_cost=time_cost,
-            origin_prompt=origin_prompt,
-            prompt=prompt,
-            negative_prompt=negative_prompt,
-            width=width,
-            height=height,
-            seed=seed,
-            steps=steps,
-            cfg=cfg,
-            sampler_name=sampler_name,
-            scheduler=scheduler,
-            denoise=denoise,
-            ckpt_name=ckpt_name,
+        gen_image_task = (
+            s.query(GenImageTaskDB).filter(GenImageTaskDB.id == gen_image_task_id).one()
         )
-        s.add(sd_image)
+        if len(uuid_list) != gen_image_task.batch_size:
+            raise Exception(
+                f"image len mismatch, expect: {gen_image_task.batch_size}, got: {len(uuid_list)}"
+            )
+        for index in range(gen_image_task.batch_size):
+            sd_image = SDImageDB(
+                uuid=uuid_list[index],
+                format=format,
+                time_cost=time_cost,
+                origin_prompt=origin_prompt,
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                width=width,
+                height=height,
+                seed=seed,
+                steps=steps,
+                cfg=cfg,
+                sampler_name=sampler_name,
+                scheduler=scheduler,
+                denoise=denoise,
+                ckpt_name=ckpt_name,
+            )
+            s.add(sd_image)
+            gen_image_task.result_images.append(sd_image)
         s.commit()
 
 
 def get_sd_image_list_db(
-    page: int, page_size: int, timestamp_filter: int = None
+    page: int,
+    page_size: int,
+    timestamp_filter: int = None,
+    collection_filter: str = None,
 ) -> tuple[List[SDImage], int]:
     with get_session() as s:
         limit = page_size
@@ -184,6 +200,8 @@ def get_sd_image_list_db(
             q = q.filter(
                 SDImageDB.created_at < datetime.fromtimestamp(timestamp_filter)
             )
+        if collection_filter and len(collection_filter) != 0:
+            q = q.filter(SDImageDB.collections.contains([collection_filter]))
 
         total = q.count()
         q = q.order_by(SDImageDB.created_at.desc())
@@ -208,4 +226,31 @@ def get_sd_image_db(uuid: str) -> SDImage:
 
 def delete_sd_image_db(uuid: str):
     with get_session() as s:
-        s.query(SDImageDB).filter(SDImageDB.uuid == uuid).delete()
+        sd_image_db = s.query(SDImageDB).filter(SDImageDB.uuid == uuid).first()
+        if sd_image_db:
+            sd_image_db.image_file_deleted = True
+            s.commit()
+        return
+
+
+def get_image_collection_list():
+    with get_session() as s:
+        image_collections = s.query(ImageCollectionDB).all()
+        return [
+            ImageCollection.model_validate(image_collection)
+            for image_collection in image_collections
+        ]
+
+
+def add_image_collection(name: str):
+    with get_session() as s:
+        image_collection = ImageCollectionDB()
+        image_collection.name = name
+        s.add(image_collection)
+        s.commit()
+
+
+def delete_image_collection(name: str):
+    with get_session() as s:
+        s.query(ImageCollectionDB).filter(ImageCollectionDB.name == name).delete()
+        s.commit()
