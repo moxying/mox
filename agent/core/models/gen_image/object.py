@@ -26,7 +26,6 @@ class SDImage(BaseModel):
 
     uuid: str
     format: str
-    time_cost: int
     origin_prompt: str
     image_file_deleted: bool
     task_type: str
@@ -55,7 +54,7 @@ class GenImageTask(BaseModel):
     updated_at: datetime
 
     task_type: str
-    task_tags: Optional[List[str]] = None
+    task_tags: Optional[dict] = None
     task_status: str
     err_msg: Optional[str] = None
     origin_prompt: str

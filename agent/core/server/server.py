@@ -44,7 +44,7 @@ class Server(BasicServer):
             "/api/image/prompt/random", self.api_get_random_prompt, methods=["GET"]
         )
         # 获取任务列表
-        self.add_api_route("/api/image/tasks", self.api_image_tasks, method=["POST"])
+        self.add_api_route("/api/image/tasks", self.api_image_tasks, methods=["POST"])
         # 文生图、调整-重新生成
         self.add_api_route("/api/image/txt2img", self.api_txt2img, methods=["POST"])
         # 变化
@@ -143,7 +143,7 @@ class Server(BasicServer):
 
         # add task to db
         task_id = add_gen_image_task_db(
-            task_type=TASK_TYPE_TXT2IMG,
+            task_type=TaskType.TXT2IMG,
             task_tags=request.task_tags,
             origin_prompt=request.origin_prompt,
             negative_prompt=request.negative_prompt,

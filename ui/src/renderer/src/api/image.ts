@@ -1,19 +1,26 @@
 import http from '@/utils/http'
 
-export interface GenImageRequest {
-  prompt: string
+export interface Txt2imgRequest {
+  origin_prompt: string
+  ckpt_name: string
   negative_prompt?: string
+  seed?: number
+  steps?: number
+  cfg?: number
+  sampler_name?: string
+  scheduler?: string
+  denoise?: number
   batch_size?: number
   width?: number
   height?: number
-  seed?: number
+  task_tags?: object
 }
 
-export interface GenImageResponse {
+export interface Txt2imgResponse {
   code: number
   msg?: string
   data?: {
-    task_uuid?: string
+    id?: string
   }
 }
 
@@ -30,7 +37,6 @@ export interface SDImage {
   uuid: string
   task_uuid: string
   name: string
-  time_cost: number
   origin_prompt: string
   prompt: string
   negative_prompt: string
@@ -71,8 +77,8 @@ export interface DeleteImageResponse {
   data?: string
 }
 
-export const genImageAPI = async (request?: GenImageRequest) => {
-  return await http<GenImageResponse>({ url: '/api/image/create', method: 'post', data: request })
+export const txt2imgAPI = async (request?: Txt2imgRequest) => {
+  return await http<Txt2imgResponse>({ url: '/api/image/txt2img', method: 'post', data: request })
 }
 
 export const getImageListAsFragmentAPI = async (request?: GetImageListAsFragmentRequest) => {

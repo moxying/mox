@@ -70,7 +70,6 @@ class ComfyUIClient(BasicClient):
             ComfyUIEventData(
                 task_id=task_id,
                 progress_name=ComfyUIProgressName.SUBMIT_TASK,
-                progress_tip="任务已提交绘图引擎",
                 progress_value=1,
                 progress_value_max=1,
             )
@@ -110,7 +109,6 @@ class ComfyUIClient(BasicClient):
                         ComfyUIEventData(
                             task_id=self.task_id,
                             progress_name=ComfyUIProgressName.TASK_START,
-                            progress_tip="绘图引擎开始执行此任务",
                             progress_value=1,
                             progress_value_max=1,
                         )

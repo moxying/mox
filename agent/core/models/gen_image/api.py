@@ -33,7 +33,7 @@ class Txt2imgRequest(BaseModel):
     batch_size: Optional[int] = 4
     width: Optional[int] = 1024
     height: Optional[int] = 1024
-    task_tags: Optional[List[str]] = None
+    task_tags: Optional[dict] = None
 
 
 class Txt2imgResponse(CommonResponse):
@@ -55,7 +55,7 @@ class GetImageListRequest(PageInfoRequest):
     pass
 
 
-class GetImageListResponseData(PageInfoResponseData):
+class GetImageListResponseData(PageInfoResponse.Data):
     list: List[SDImage]
 
 
@@ -72,7 +72,7 @@ class SDImageFragment(BaseModel):
     list: List[SDImage]
 
 
-class GetImageListAsFragmentResponseData(PageInfoResponseData):
+class GetImageListAsFragmentResponseData(PageInfoResponse.Data):
     list: List[SDImageFragment]
     cur_total: int
 

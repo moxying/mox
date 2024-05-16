@@ -1,6 +1,6 @@
 from typing import List
 from typing import Dict, List, Union, Any, Optional
-from sqlalchemy import Integer, String, ForeignKey, DateTime, Boolean, Float, ARRAY
+from sqlalchemy import Integer, String, ForeignKey, DateTime, Boolean, Float, JSON
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 from sqlalchemy.dialects.sqlite import TEXT
 import uuid
@@ -22,12 +22,11 @@ class SDImageDB(Base):
 
     uuid: Mapped[String] = mapped_column(String(64), index=True)
     format: Mapped[String] = mapped_column(String(512), default="")
-    time_cost: Mapped[Integer] = mapped_column(Integer, default=0)
     origin_prompt: Mapped[TEXT] = mapped_column(TEXT, default="")
     image_file_deleted: Mapped[Boolean] = mapped_column(Boolean, default=False)
     task_type: Mapped[String] = mapped_column(String(64), default="")
-    task_tags: Mapped[ARRAY[String]] = mapped_column(ARRAY[String(64)], default=[])
-    collections: Mapped[ARRAY[String]] = mapped_column(ARRAY[String(256)], default=[])
+    task_tags: Mapped[JSON] = mapped_column(JSON, default="{}")
+    collections: Mapped[JSON] = mapped_column(JSON, default="{}")
 
     prompt: Mapped[TEXT] = mapped_column(TEXT, default="")
     negative_prompt: Mapped[TEXT] = mapped_column(TEXT, default="")
@@ -49,7 +48,7 @@ class GenImageTaskDB(Base):
     __tablename__ = "gen_image_task"
 
     task_type: Mapped[String] = mapped_column(String(64), default="")
-    task_tags: Mapped[ARRAY[String]] = mapped_column(ARRAY[String(64)], default=[])
+    task_tags: Mapped[JSON] = mapped_column(JSON, default="{}")
     task_status: Mapped[String] = mapped_column(String(64), default="")
     err_msg: Mapped[TEXT] = mapped_column(TEXT, default="")
     origin_prompt: Mapped[TEXT] = mapped_column(TEXT, default="")
@@ -73,7 +72,7 @@ class GenImageTaskDB(Base):
 
 def add_gen_image_task_db(
     task_type: str,
-    task_tags: List[str],
+    task_tags: dict,
     origin_prompt: str,
     negative_prompt: str,
     batch_size: int,
@@ -118,6 +117,17 @@ def get_gen_image_task_db(task_id: int) -> GenImageTask:
         return GenImageTask.model_validate(gen_image_task)
 
 
+def update_gen_image_task_status(task_id: int, task_status: str, err_msg: str = None):
+    with get_session() as s:
+        gen_image_task = (
+            s.query(GenImageTaskDB).filter(GenImageTaskDB.id == task_id).one()
+        )
+        gen_image_task.task_status = task_status
+        if err_msg and len(err_msg) != 0:
+            gen_image_task.err_msg = err_msg
+        s.commit()
+
+
 def get_gen_image_task_list_db(
     page: int, page_size: int, status: str = None
 ) -> tuple[List[GenImageTask], int]:
@@ -145,7 +155,6 @@ def get_gen_image_task_list_db(
 def add_sd_images_db(
     uuid_list: List[str],
     format: str,
-    time_cost: int,
     origin_prompt: str,
     prompt: str,
     negative_prompt: str,
@@ -172,7 +181,6 @@ def add_sd_images_db(
             sd_image = SDImageDB(
                 uuid=uuid_list[index],
                 format=format,
-                time_cost=time_cost,
                 origin_prompt=origin_prompt,
                 prompt=prompt,
                 negative_prompt=negative_prompt,
@@ -209,7 +217,7 @@ def get_sd_image_list_db(
                 SDImageDB.created_at < datetime.fromtimestamp(timestamp_filter)
             )
         if collection_filter and len(collection_filter) != 0:
-            q = q.filter(SDImageDB.collections.contains([collection_filter]))
+            q = q.filter(SDImageDB.collections.has_key(collection_filter))
 
         total = q.count()
         q = q.order_by(SDImageDB.created_at.desc())

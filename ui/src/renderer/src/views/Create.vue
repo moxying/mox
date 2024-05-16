@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import WSUtil from '@/utils/websocket/WSUtil'
 import { emitter, type WSEvent } from '@/utils/emitter'
-import { genImageAPI, getRandomPromptAPI } from '@/api/image'
+import { txt2imgAPI, getRandomPromptAPI } from '@/api/image'
 import ProgressBar from '@/components/ProgressBar.vue'
 import { AxiosError } from 'axios'
 
@@ -107,9 +107,9 @@ const startCreate = async () => {
   createState.value = CreateState.Doing
   createProgress.value = 1
   createProgressTip.value = '任务执行中...'
-  const result = await genImageAPI({
-    prompt: prompt.value,
-    negative_prompt: negativePrompt.value,
+  const result = await txt2imgAPI({
+    origin_prompt: prompt.value,
+    ckpt_name: '',
     batch_size: batchSize.value,
     width: width.value,
     height: height.value,
@@ -145,7 +145,6 @@ const imageUrl = (filename: string) => {
 // agent ws
 const TOPIC_COMMON_STATUS = 'status'
 const TOPIC_COMMON_LOG = 'log'
-const TOPIC_GENIMAGE_START = 'genimage_start'
 const TOPIC_GENIMAGE_PROGRESS = 'genimage_progress'
 const TOPIC_GENIMAGE_END = 'genimage_end'
 const TOPIC_GENIMAGE_FAILED = 'genimage_failed'
@@ -166,8 +165,6 @@ const TOPIC_GENIMAGE_FAILED = 'genimage_failed'
 emitter.on('wsEvent', (e: WSEvent) => {
   const eventData = e.data
   switch (e.topic) {
-    case TOPIC_GENIMAGE_START:
-      break
     case TOPIC_GENIMAGE_PROGRESS:
       if (eventData.progress_value && eventData.progress_value_max) {
         createProgress.value = Math.floor(

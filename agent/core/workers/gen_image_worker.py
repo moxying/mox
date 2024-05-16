@@ -53,7 +53,9 @@ class GenImageWorker(threading.Thread):
         while True:
             try:
                 new_task: GenImageWorkerTask = self.task_queue.get()
-                logging.info(f"GenImageWorker start handle new task: {new_task.task_id}")
+                logging.info(
+                    f"GenImageWorker start handle new task: {new_task.task_id}"
+                )
                 gen_image_task = get_gen_image_task_db(new_task.task_id)
                 EventDispatcher().dispatch_event(
                     EVENT_TYPE_WS,
@@ -77,7 +79,7 @@ class GenImageWorker(threading.Thread):
 
                 match new_task.task_type:
                     case TaskType.TXT2IMG:
-                        prompt = Translator().run(gen_image_task.prompt),
+                        prompt = (Translator().run(gen_image_task.prompt),)
                         EventDispatcher().dispatch_event(
                             EVENT_TYPE_WS,
                             WSEvent(
@@ -86,7 +88,9 @@ class GenImageWorker(threading.Thread):
                                     task_id=new_task.task_id,
                                     progress_name=TOPIC_GENIMAGE_PROGRESS,
                                     progress_tip=GenImageWorkerProgressNameBefore.TRANSLATION.value,
-                                    progress_value=len(GenImageWorkerProgressName).index(
+                                    progress_value=len(
+                                        GenImageWorkerProgressName
+                                    ).index(
                                         GenImageWorkerProgressNameBefore.TRANSLATION
                                     ),
                                     progress_value_max=len(GenImageWorkerProgressName),
@@ -111,9 +115,14 @@ class GenImageWorker(threading.Thread):
                         basic_txt2img_task_result = basic_txt2img.run(
                             self.comfyui_client, basic_txt2img_task
                         )
+                        # task failed
                         if basic_txt2img_task_result.err_msg != None:
-                            logging.error(
-                                f"basic_txt2img_task failed: {basic_txt2img_task_result.err_msg}"
+                            err_msg = f"basic_txt2img_task failed: {basic_txt2img_task_result.err_msg}"
+                            logging.error(err_msg)
+                            # update task status to db
+                            update_gen_image_task_status(
+                                TASK_FAILED,
+                                err_msg,
                             )
                             EventDispatcher().remove_event_listener(
                                 f"{EVENT_TYPE_INTERNAL_COMFYUI}_{new_task.task_id}",
@@ -125,7 +134,7 @@ class GenImageWorker(threading.Thread):
                                     topic=TOPIC_GENIMAGE_FAILED,
                                     data=GenImageEvent.Data(
                                         task_id=new_task.task_id,
-                                        err_msg=basic_txt2img_task_result.err_msg,
+                                        err_msg=err_msg,
                                     ),
                                 ),
                             )
@@ -141,7 +150,6 @@ class GenImageWorker(threading.Thread):
                         add_sd_images_db(
                             uuid_list=image_uuid_list,
                             format="PNG",
-                            time_cost=0,
                             origin_prompt=gen_image_task.origin_prompt,
                             prompt=basic_txt2img_task_result.prompt,
                             negative_prompt=basic_txt2img_task_result.negative_prompt,
@@ -155,11 +163,12 @@ class GenImageWorker(threading.Thread):
                             denoise=basic_txt2img_task_result.denoise,
                             ckpt_name=basic_txt2img_task_result.ckpt_name,
                         )
+                        update_gen_image_task_status(TASK_DONE)
                     case _:
-                        logging.warning(f"not support target task type: {new_task.task_type}, task id: {new_task.task_id}")
+                        logging.warning(
+                            f"not support target task type: {new_task.task_type}, task id: {new_task.task_id}"
+                        )
                         continue
-
-
 
                 EventDispatcher().remove_event_listener(
                     f"{EVENT_TYPE_INTERNAL_COMFYUI}_{new_task.task_id}",
@@ -169,7 +178,9 @@ class GenImageWorker(threading.Thread):
                     EVENT_TYPE_WS,
                     WSEvent(
                         topic=TOPIC_GENIMAGE_END,
-                        data=GenImageEvent.Data(task_id=new_task.task_id, images=images),
+                        data=GenImageEvent.Data(
+                            task_id=new_task.task_id, images=images
+                        ),
                     ),
                 )
                 logging.info(f"GenImageWorker task done, task_id: {new_task.task_id}")
@@ -179,89 +190,27 @@ class GenImageWorker(threading.Thread):
 
     def update_progress_listener(self, event: ComfyUIEventData):
         logging.info(f"update_progress_listener: {event}")
-        if event.progress_name == NAME_SUBMIT_TASK:
-            self.progress_value = 1
-            EventDispatcher().dispatch_event(
-                EVENT_TYPE_WS,
-                WSEvent(
-                    topic=TOPIC_GENIMAGE_PROGRESS,
-                    data=GenImageEventData(
-                        task_uuid=event.task_uuid,
-                        progress_tip=event.progress_name,
-                        progress_value=self.progress_value,
-                        progress_value_max=event.progress_value_max,
+        progress_tip = f"{event.progress_name}"
+        if event.progress_tip and len(event.progress_tip) != 0:
+            progress_tip = f"{progress_tip}: {event.progress_tip}"
+        if event.node_id != None:
+            progress_tip = f"{progress_tip} {event.node_progress_value}/{event.node_progress_value_max}"
+
+        EventDispatcher().dispatch_event(
+            EVENT_TYPE_WS,
+            WSEvent(
+                topic=TOPIC_GENIMAGE_PROGRESS,
+                data=GenImageEvent.Data(
+                    task_id=event.task_id,
+                    progress_name=TOPIC_GENIMAGE_PROGRESS,
+                    progress_tip=progress_tip,
+                    progress_value=len(GenImageWorkerProgressName).index(
+                        event.progress_name
                     ),
+                    progress_value_max=len(GenImageWorkerProgressName),
                 ),
-            )
-        elif event.progress_name == NAME_TASK_NODE_CACHED:
-            self.progress_value += len(event.cached_nodes)
-            EventDispatcher().dispatch_event(
-                EVENT_TYPE_WS,
-                WSEvent(
-                    topic=TOPIC_GENIMAGE_PROGRESS,
-                    data=GenImageEventData(
-                        task_uuid=event.task_uuid,
-                        progress_tip=event.progress_name,
-                        progress_value=self.progress_value,
-                        progress_value_max=event.progress_value_max,
-                    ),
-                ),
-            )
-        elif event.progress_name == NAME_TASK_NODE_START:
-            self.progress_value += 1
-            EventDispatcher().dispatch_event(
-                EVENT_TYPE_WS,
-                WSEvent(
-                    topic=TOPIC_GENIMAGE_PROGRESS,
-                    data=GenImageEventData(
-                        task_uuid=event.task_uuid,
-                        progress_tip=f"{event.progress_name}: {event.progress_tip}",
-                        progress_value=self.progress_value,
-                        progress_value_max=event.progress_value_max,
-                    ),
-                ),
-            )
-        elif event.progress_name == NAME_TASK_NODE_DOING:
-            EventDispatcher().dispatch_event(
-                EVENT_TYPE_WS,
-                WSEvent(
-                    topic=TOPIC_GENIMAGE_PROGRESS,
-                    data=GenImageEventData(
-                        task_uuid=event.task_uuid,
-                        progress_tip=f"{event.progress_name}: {event.progress_tip}; 进度: {event.node_progress_value}/{event.node_progress_value_max}",
-                        progress_value=self.progress_value,
-                        progress_value_max=event.progress_value_max,
-                    ),
-                ),
-            )
-        elif event.progress_name == NAME_TASK_DONE:
-            self.progress_value = event.progress_value_max
-            EventDispatcher().dispatch_event(
-                EVENT_TYPE_WS,
-                WSEvent(
-                    topic=TOPIC_GENIMAGE_PROGRESS,
-                    data=GenImageEventData(
-                        task_uuid=event.task_uuid,
-                        progress_tip=event.progress_name,
-                        progress_value=self.progress_value,
-                        progress_value_max=event.progress_value_max,
-                    ),
-                ),
-            )
-        elif event.progress_name == NAME_TASK_FAILED:
-            EventDispatcher().dispatch_event(
-                EVENT_TYPE_WS,
-                WSEvent(
-                    topic=TOPIC_GENIMAGE_PROGRESS,
-                    data=GenImageEventData(
-                        task_uuid=event.task_uuid,
-                        progress_tip=event.progress_name,
-                        progress_value=self.progress_value,
-                        progress_value_max=event.progress_value_max,
-                        err_msg=event.err_msg,
-                    ),
-                ),
-            )
+            ),
+        )
 
     def add_task(self, new_task: GenImageTask):
         logging.info(f"GenImageTaskMgr add new task")
