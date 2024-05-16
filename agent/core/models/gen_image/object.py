@@ -1,13 +1,14 @@
 from typing import Dict, List, Union, Any, Optional
 from pydantic import BaseModel, validator, Field
 from datetime import datetime
+from enum import Enum
 
 from core.const import *
 from core.models.common import *
 
 
-TASK_TYPE_TXT2IMG = "txt2img"
-TASK_TYPE_IMG2IMG = "img2img"
+class TaskType(Enum):
+    TXT2IMG = "txt2img"
 
 
 class ImageCollection(BaseModel):
@@ -75,6 +76,6 @@ class GenImageTask(BaseModel):
     result_images: Optional[List[SDImage]] = None
 
 
-class GenImageWorkTask(BaseModel):
+class GenImageWorkerTask(BaseModel):
     task_id: int
-    task_type: str
+    task_type: TaskType

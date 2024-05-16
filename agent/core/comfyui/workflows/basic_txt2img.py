@@ -9,11 +9,11 @@ from core.comfyui.comfyui_client import ComfyUIClient
 
 
 class BasicTxt2imgTask(BaseModel):
-    task_uuid: str
+    task_id: int
     prompt: str
-    ckpt_name: str
 
     # optional
+    ckpt_name: Optional[str] = ""
     negative_prompt: Optional[str] = ""
     seed: Optional[int] = 0
     steps: Optional[int] = 5
@@ -36,6 +36,7 @@ def run(
 ) -> BasicTxt2imgTaskResult:
     logging.info(
         f"BasicTxt2imgTask run start, \
+        task_id: {task.task_id} \
         prompt: {task.prompt}, \
         ckpt_name: {task.ckpt_name}, \
         negative_prompt: {task.negative_prompt} \
@@ -51,6 +52,11 @@ def run(
     )
 
     # check default
+    task.ckpt_name = (
+        "juggernautXL_v9Rdphoto2Lightning.safetensors"
+        if task.ckpt_name == ""
+        else task.ckpt_name
+    )
     task.seed = random.randint(1, 110649831182997) if task.seed == 0 else task.seed
     task.steps = 5 if task.steps == 0 else task.steps
     task.cfg = 2.0 if task.cfg == 0.0 else task.cfg
@@ -96,7 +102,7 @@ def run(
     logging.info(f"BasicTxt2imgTask get images len: {len(comfyui_result)}")
     return BasicTxt2imgTaskResult(
         images=comfyui_result,
-        task_uuid=task.task_uuid,
+        task_id=task.task_id,
         prompt=task.prompt,
         ckpt_name=task.ckpt_name,
         negative_prompt=task.negative_prompt,

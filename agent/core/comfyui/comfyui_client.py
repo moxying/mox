@@ -12,11 +12,13 @@ from core.models.common import WSEvent
 from core.server.event import EventDispatcher
 from core.config import ConfigMgr
 
+
 class ComfyUIProgressName(Enum):
     SUBMIT_TASK = "任务提交绘图引擎"
-    TASK_START = "任务开始执行"
-    TASK_DOING = "任务执行中" # prompt_json.keys()
-    TASK_DONE = "任务执行结束"
+    TASK_START = "绘图引擎任务开始执行"
+    TASK_DOING = "绘图引擎任务执行中"  # prompt_json.keys()
+    TASK_DONE = "绘图引擎任务执行结束"
+
 
 class ComfyUIEventData(BaseModel):
     task_id: int
@@ -29,6 +31,7 @@ class ComfyUIEventData(BaseModel):
     node_progress_value_max: Optional[int] = None
     err_msg: Optional[str] = None
 
+
 class ComfyUIClient(BasicClient):
     def __init__(self) -> None:
         client_id = str(uuid.uuid4())
@@ -39,13 +42,12 @@ class ComfyUIClient(BasicClient):
         self.prompt_json = None
         self.nodes = []
         self.nodes_done = []
-    
+
     def _reset_task_info(self, nodes, task_id, prompt_json):
         self.task_id = task_id
         self.prompt_json = prompt_json
         self.nodes = nodes
         self.nodes_done = []
-        
 
     def _update_progress(self, event_data: ComfyUIEventData):
         EventDispatcher().dispatch_event(
@@ -54,8 +56,10 @@ class ComfyUIClient(BasicClient):
         )
 
     def queue_prompt(self, task_id, prompt_json, result_image_node_id: str = None):
-        
-        self._reset_task_info(nodes=prompt_json.keys(), task_id=task_id, prompt_json=prompt_json)
+
+        self._reset_task_info(
+            nodes=prompt_json.keys(), task_id=task_id, prompt_json=prompt_json
+        )
 
         # queue
         prompt_id = self.post_prompt_api(prompt_json).prompt_id
@@ -127,7 +131,9 @@ class ComfyUIClient(BasicClient):
                     if node_id is None:
                         logging.debug(f"ws execute done: {prompt_id}")
                         if len(self.nodes_done) != len(self.nodes):
-                            raise Exception("task status not expect, len(self.nodes_done) != len(self.nodes)")
+                            raise Exception(
+                                "task status not expect, len(self.nodes_done) != len(self.nodes)"
+                            )
                         self._update_progress(
                             ComfyUIEventData(
                                 task_id=self.task_id,
@@ -171,7 +177,7 @@ class ComfyUIClient(BasicClient):
                         logging.debug(f"node {node_id} exec done")
                         self.nodes_done.append(node_id)
                     continue
-                case "executed": # 节点有output
+                case "executed":  # 节点有output
                     # {"type": "executed", "data": {"node": "11", "output": {"images": [{"filename": "ComfyUI_temp_igimx_00013_.png", "subfolder": "", "type": "temp"}]}, "prompt_id": "86534afa-32ee-4359-82af-00c29b484a21"}}
                     data = message["data"]
                     if data["prompt_id"] != prompt_id:

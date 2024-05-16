@@ -5,20 +5,39 @@ from typing import Dict, List, Union, Any, Optional
 from pydantic import BaseModel
 import uuid
 import os
+from enum import Enum
 
 from core.config import ConfigMgr
 from core.comfyui.comfyui_client import ComfyUIClient
-from core.comfyui.workflows import basic_sdxl_jxl
-from core.comfyui.workflows.basic_sdxl_jxl import BasicSDXLJXLTask
-
+from core.comfyui.workflows import basic_txt2img
+from core.comfyui.workflows.basic_txt2img import BasicTxt2imgTask
 from core.const import *
 from core.models.common import WSEvent
 from core.models.gen_image.object import *
+from core.models.gen_image.ws import *
+from core.models.gen_image.db import *
 from core.server.event import EventDispatcher
-from core.models.gen_image.db import add_sd_image_db
+
 from core.storage.storage_mgr import StorageMgr
 from core.comfyui.comfyui_client import *
 from core.utils.translator import Translator
+from core.utils.unionenum import enum_union
+
+
+class GenImageWorkerProgressNameBefore(Enum):
+    START = "任务开始"
+    TRANSLATION = "翻译成中文"
+
+
+class GenImageWorkerProgressNameAfter(Enum):
+    END = "任务结束"
+
+
+GenImageWorkerProgressName = enum_union(
+    GenImageWorkerProgressNameBefore,
+    ComfyUIProgressName,
+    GenImageWorkerProgressNameAfter,
+)
 
 
 class GenImageWorker(threading.Thread):
@@ -32,88 +51,131 @@ class GenImageWorker(threading.Thread):
     def run(self):
         logging.info(f"GenImageWorker run start")
         while True:
-            new_task: GenImageTask = self.task_queue.get()
-            logging.info(
-                f"GenImageWorker start handle new task: {new_task.task_uuid}, prompt: {new_task.prompt}"
-            )
-            EventDispatcher().dispatch_event(
-                EVENT_TYPE_WS,
-                WSEvent(
-                    topic=TOPIC_GENIMAGE_START,
-                    data=GenImageEventData(task_uuid=new_task.task_uuid),
-                ),
-            )
-            EventDispatcher().add_event_listener(
-                f"{EVENT_TYPE_INTERNAL_COMFYUI}_{new_task.task_uuid}",
-                self.update_progress_listener,
-            )
-            basic_sdxl_jxl_task = BasicSDXLJXLTask(
-                task_uuid=new_task.task_uuid,
-                prompt=Translator().run(new_task.prompt),
-                negative_prompt=new_task.negative_prompt,
-                seed=new_task.seed,
-                batch_size=new_task.batch_size,
-                width=new_task.width,
-                height=new_task.height,
-            )
-            basic_sdxl_jxl_task_result = basic_sdxl_jxl.run(
-                self.comfyui_client, basic_sdxl_jxl_task
-            )
-            if basic_sdxl_jxl_task_result.err_msg != None:
-                logging.error(
-                    f"basic_sdxl_jxl_task failed: {basic_sdxl_jxl_task_result.err_msg}"
+            try:
+                new_task: GenImageWorkerTask = self.task_queue.get()
+                logging.info(f"GenImageWorker start handle new task: {new_task.task_id}")
+                gen_image_task = get_gen_image_task_db(new_task.task_id)
+                EventDispatcher().dispatch_event(
+                    EVENT_TYPE_WS,
+                    WSEvent(
+                        topic=TOPIC_GENIMAGE_PROGRESS,
+                        data=GenImageEvent.Data(
+                            task_id=new_task.task_id,
+                            progress_name=TOPIC_GENIMAGE_PROGRESS,
+                            progress_tip=GenImageWorkerProgressNameBefore.START.value,
+                            progress_value=len(GenImageWorkerProgressName).index(
+                                GenImageWorkerProgressNameBefore.START
+                            ),
+                            progress_value_max=len(GenImageWorkerProgressName),
+                        ),
+                    ),
                 )
+                EventDispatcher().add_event_listener(
+                    event_type=f"{EVENT_TYPE_INTERNAL_COMFYUI}_{new_task.task_id}",
+                    listener=self.update_progress_listener,
+                )
+
+                match new_task.task_type:
+                    case TaskType.TXT2IMG:
+                        prompt = Translator().run(gen_image_task.prompt),
+                        EventDispatcher().dispatch_event(
+                            EVENT_TYPE_WS,
+                            WSEvent(
+                                topic=TOPIC_GENIMAGE_PROGRESS,
+                                data=GenImageEvent.Data(
+                                    task_id=new_task.task_id,
+                                    progress_name=TOPIC_GENIMAGE_PROGRESS,
+                                    progress_tip=GenImageWorkerProgressNameBefore.TRANSLATION.value,
+                                    progress_value=len(GenImageWorkerProgressName).index(
+                                        GenImageWorkerProgressNameBefore.TRANSLATION
+                                    ),
+                                    progress_value_max=len(GenImageWorkerProgressName),
+                                ),
+                            ),
+                        )
+                        basic_txt2img_task = BasicTxt2imgTask(
+                            task_id=new_task.task_id,
+                            prompt=prompt,
+                            ckpt_name=gen_image_task.ckpt_name,
+                            negative_prompt=gen_image_task.negative_prompt,
+                            seed=gen_image_task.seed,
+                            steps=gen_image_task.steps,
+                            cfg=gen_image_task.cfg,
+                            sampler_name=gen_image_task.sampler_name,
+                            scheduler=gen_image_task.scheduler,
+                            denoise=gen_image_task.denoise,
+                            batch_size=gen_image_task.batch_size,
+                            width=gen_image_task.width,
+                            height=gen_image_task.height,
+                        )
+                        basic_txt2img_task_result = basic_txt2img.run(
+                            self.comfyui_client, basic_txt2img_task
+                        )
+                        if basic_txt2img_task_result.err_msg != None:
+                            logging.error(
+                                f"basic_txt2img_task failed: {basic_txt2img_task_result.err_msg}"
+                            )
+                            EventDispatcher().remove_event_listener(
+                                f"{EVENT_TYPE_INTERNAL_COMFYUI}_{new_task.task_id}",
+                                self.update_progress_listener,
+                            )
+                            EventDispatcher().dispatch_event(
+                                EVENT_TYPE_WS,
+                                WSEvent(
+                                    topic=TOPIC_GENIMAGE_FAILED,
+                                    data=GenImageEvent.Data(
+                                        task_id=new_task.task_id,
+                                        err_msg=basic_txt2img_task_result.err_msg,
+                                    ),
+                                ),
+                            )
+                            continue
+                        images = []
+                        image_uuid_list = []
+                        for image in basic_txt2img_task_result.images:
+                            image_uuid = str(uuid.uuid4())
+                            image_name = image_uuid + ".png"
+                            StorageMgr().save_image(filename=image_name, image=image)
+                            images.append(image_name)
+                            image_uuid_list.append(image_uuid)
+                        add_sd_images_db(
+                            uuid_list=image_uuid_list,
+                            format="PNG",
+                            time_cost=0,
+                            origin_prompt=gen_image_task.origin_prompt,
+                            prompt=basic_txt2img_task_result.prompt,
+                            negative_prompt=basic_txt2img_task_result.negative_prompt,
+                            width=basic_txt2img_task_result.width,
+                            height=basic_txt2img_task_result.height,
+                            seed=basic_txt2img_task_result.seed,
+                            steps=basic_txt2img_task_result.steps,
+                            cfg=basic_txt2img_task_result.cfg,
+                            sampler_name=basic_txt2img_task_result.sampler_name,
+                            scheduler=basic_txt2img_task_result.scheduler,
+                            denoise=basic_txt2img_task_result.denoise,
+                            ckpt_name=basic_txt2img_task_result.ckpt_name,
+                        )
+                    case _:
+                        logging.warning(f"not support target task type: {new_task.task_type}, task id: {new_task.task_id}")
+                        continue
+
+
+
                 EventDispatcher().remove_event_listener(
-                    f"{EVENT_TYPE_INTERNAL_COMFYUI}_{new_task.task_uuid}",
+                    f"{EVENT_TYPE_INTERNAL_COMFYUI}_{new_task.task_id}",
                     self.update_progress_listener,
                 )
                 EventDispatcher().dispatch_event(
                     EVENT_TYPE_WS,
                     WSEvent(
-                        topic=TOPIC_GENIMAGE_FAILED,
-                        data=GenImageEventData(
-                            task_uuid=new_task.task_uuid,
-                            err_msg=basic_sdxl_jxl_task_result.err_msg,
-                        ),
+                        topic=TOPIC_GENIMAGE_END,
+                        data=GenImageEvent.Data(task_id=new_task.task_id, images=images),
                     ),
                 )
+                logging.info(f"GenImageWorker task done, task_id: {new_task.task_id}")
+            except Exception as err:
+                logging.error(f"GenImageWorker loop err: {err}")
                 continue
-            images = []
-            for image in basic_sdxl_jxl_task_result.images:
-                image_uuid = str(uuid.uuid4())
-                image_name = image_uuid + ".png"
-                StorageMgr().save_image(filename=image_name, image=image)
-                add_sd_image_db(
-                    uuid=image_uuid,
-                    task_uuid=new_task.task_uuid,
-                    name=image_name,
-                    time_cost=0,
-                    origin_prompt=new_task.prompt,
-                    prompt=basic_sdxl_jxl_task_result.prompt,
-                    negative_prompt=basic_sdxl_jxl_task_result.negative_prompt,
-                    width=basic_sdxl_jxl_task_result.width,
-                    height=basic_sdxl_jxl_task_result.height,
-                    seed=basic_sdxl_jxl_task_result.seed,
-                    steps=basic_sdxl_jxl_task_result.steps,
-                    cfg=basic_sdxl_jxl_task_result.cfg,
-                    sampler_name=basic_sdxl_jxl_task_result.sampler_name,
-                    scheduler=basic_sdxl_jxl_task_result.scheduler,
-                    denoise=basic_sdxl_jxl_task_result.denoise,
-                    ckpt_name=basic_sdxl_jxl_task_result.ckpt_name,
-                )
-                images.append(image_name)
-            EventDispatcher().remove_event_listener(
-                f"{EVENT_TYPE_INTERNAL_COMFYUI}_{new_task.task_uuid}",
-                self.update_progress_listener,
-            )
-            EventDispatcher().dispatch_event(
-                EVENT_TYPE_WS,
-                WSEvent(
-                    topic=TOPIC_GENIMAGE_END,
-                    data=GenImageEventData(task_uuid=new_task.task_uuid, images=images),
-                ),
-            )
-            logging.info(f"GenImageWorker task done, task_uuid: {new_task.task_uuid}")
 
     def update_progress_listener(self, event: ComfyUIEventData):
         logging.info(f"update_progress_listener: {event}")

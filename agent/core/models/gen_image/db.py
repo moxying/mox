@@ -110,6 +110,14 @@ def add_gen_image_task_db(
         return gen_image_task.id
 
 
+def get_gen_image_task_db(task_id: int) -> GenImageTask:
+    with get_session() as s:
+        gen_image_task = (
+            s.query(GenImageTaskDB).filter(GenImageTaskDB.id == task_id).one()
+        )
+        return GenImageTask.model_validate(gen_image_task)
+
+
 def get_gen_image_task_list_db(
     page: int, page_size: int, status: str = None
 ) -> tuple[List[GenImageTask], int]:

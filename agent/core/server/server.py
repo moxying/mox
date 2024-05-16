@@ -163,7 +163,7 @@ class Server(BasicServer):
         # add task to work
         gen_image_worker: GenImageWorker = self.workers[WORKER_GEN_IMAGE]
         gen_image_worker.add_task(
-            GenImageWorkTask(task_id=id, task_type=TASK_TYPE_TXT2IMG)
+            GenImageWorkerTask(task_id=id, task_type=TaskType.TXT2IMG)
         )
 
         return Txt2imgResponse(data=Txt2imgResponse.Data(id=task_id))
