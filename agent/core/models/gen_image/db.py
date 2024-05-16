@@ -8,40 +8,13 @@ import uuid
 from core.db.common import Base
 from core.db.db import get_session
 from core.const import *
-from .gen_image import *
+from .object import *
 
 
 class ImageCollectionDB(Base):
     __tablename__ = "image_collection"
 
     name: Mapped[String] = mapped_column(String(256), default="", unique=True)
-
-
-class GenImageTaskDB(Base):
-
-    __tablename__ = "gen_image_task"
-
-    task_type: Mapped[String] = mapped_column(String(64), default="")
-    task_tags: Mapped[ARRAY[String]] = mapped_column(ARRAY[String(64)], default=[])
-    task_status: Mapped[String] = mapped_column(String(64), default="")
-    err_msg: Mapped[TEXT] = mapped_column(TEXT, default="")
-    origin_prompt: Mapped[TEXT] = mapped_column(TEXT, default="")
-
-    # txt2img
-    prompt: Mapped[TEXT] = mapped_column(TEXT, default="")
-    negative_prompt: Mapped[TEXT] = mapped_column(TEXT, default="")
-    batch_size: Mapped[Integer] = mapped_column(Integer, default=0)
-    width: Mapped[Integer] = mapped_column(Integer, default=512)
-    height: Mapped[Integer] = mapped_column(Integer, default=768)
-    seed: Mapped[Integer] = mapped_column(Integer, default=0)
-    steps: Mapped[Integer] = mapped_column(Integer, default=0)
-    cfg: Mapped[Float] = mapped_column(Float, default=0.0)
-    sampler_name: Mapped[String] = mapped_column(String(512), default="")
-    scheduler: Mapped[String] = mapped_column(String(512), default="")
-    denoise: Mapped[Float] = mapped_column(Float, default=0.0)
-    ckpt_name: Mapped[String] = mapped_column(String(512), default="")
-
-    result_images = relationship("SDImageDB")
 
 
 class SDImageDB(Base):
@@ -69,6 +42,33 @@ class SDImageDB(Base):
     ckpt_name: Mapped[String] = mapped_column(String(512), default="")
 
     gen_image_task_id = mapped_column(Integer, ForeignKey("gen_image_task.id"))
+
+
+class GenImageTaskDB(Base):
+
+    __tablename__ = "gen_image_task"
+
+    task_type: Mapped[String] = mapped_column(String(64), default="")
+    task_tags: Mapped[ARRAY[String]] = mapped_column(ARRAY[String(64)], default=[])
+    task_status: Mapped[String] = mapped_column(String(64), default="")
+    err_msg: Mapped[TEXT] = mapped_column(TEXT, default="")
+    origin_prompt: Mapped[TEXT] = mapped_column(TEXT, default="")
+
+    # txt2img
+    prompt: Mapped[TEXT] = mapped_column(TEXT, default="")
+    negative_prompt: Mapped[TEXT] = mapped_column(TEXT, default="")
+    batch_size: Mapped[Integer] = mapped_column(Integer, default=0)
+    width: Mapped[Integer] = mapped_column(Integer, default=512)
+    height: Mapped[Integer] = mapped_column(Integer, default=768)
+    seed: Mapped[Integer] = mapped_column(Integer, default=0)
+    steps: Mapped[Integer] = mapped_column(Integer, default=0)
+    cfg: Mapped[Float] = mapped_column(Float, default=0.0)
+    sampler_name: Mapped[String] = mapped_column(String(512), default="")
+    scheduler: Mapped[String] = mapped_column(String(512), default="")
+    denoise: Mapped[Float] = mapped_column(Float, default=0.0)
+    ckpt_name: Mapped[String] = mapped_column(String(512), default="")
+
+    result_images = relationship("SDImageDB")
 
 
 def add_gen_image_task_db(
@@ -111,7 +111,7 @@ def add_gen_image_task_db(
 
 
 def get_gen_image_task_list_db(
-    page: int, page_size: int, status: str = ""
+    page: int, page_size: int, status: str = None
 ) -> tuple[List[GenImageTask], int]:
     with get_session() as s:
         limit = page_size

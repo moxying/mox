@@ -13,23 +13,12 @@ from core.comfyui.workflows.basic_sdxl_jxl import BasicSDXLJXLTask
 
 from core.const import *
 from core.models.common import WSEvent
-from core.models.gen_image import *
+from core.models.gen_image.object import *
 from core.server.event import EventDispatcher
-from core.models.gen_image_db import add_sd_image_db
+from core.models.gen_image.db import add_sd_image_db
 from core.storage.storage_mgr import StorageMgr
 from core.comfyui.comfyui_client import *
 from core.utils.translator import Translator
-
-
-class GenImageTask(BaseModel):
-    task_uuid: str
-    prompt: str
-    negative_prompt: Optional[str] = ""
-    batch_size: Optional[int] = 1
-    width: Optional[int] = 512
-    height: Optional[int] = 768
-    seed: Optional[int] = 0
-    style_name: Optional[str] = ""
 
 
 class GenImageWorker(threading.Thread):

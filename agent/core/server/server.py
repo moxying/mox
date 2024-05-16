@@ -18,8 +18,9 @@ from datetime import datetime, timedelta
 from core.config import ConfigMgr
 from core.models.common import *
 from core.models.config import *
-from core.models.gen_image import *
-from core.models.gen_image_db import *
+from core.models.gen_image.object import *
+from core.models.gen_image.db import *
+from core.models.gen_image.api import *
 from core.workers.gen_image_worker import GenImageWorker, GenImageTask
 from core.storage.storage_mgr import StorageMgr
 
@@ -34,20 +35,36 @@ class Server(BasicServer):
         # init router websocket
         self.add_api_websocket_route("/ws", self.ws)
 
+        #
         # init router http
+        #
 
-        # 获取配置
-        self.add_api_route("/api/config", self.api_get_config, methods=["GET"])
-        # 更新配置
-        self.add_api_route("/api/config", self.api_update_config, methods=["PUT"])
-
-        # 获取output内的文件
+        # 获取随机提示词
         self.add_api_route(
-            "/api/file/output/{filename}", self.api_get_output_file, methods=["GET"]
+            "/api/image/prompt/random", self.api_get_random_prompt, methods=["GET"]
         )
-
-        # txt2img
+        # 获取任务列表
+        self.add_api_route("/api/image/tasks", self.api_image_tasks, method=["POST"])
+        # 文生图、调整-重新生成
         self.add_api_route("/api/image/txt2img", self.api_txt2img, methods=["POST"])
+        # 变化
+        self.add_api_route("/api/image/img2img", self.api_img2img, methods=["POST"])
+        # 高清
+        self.add_api_route(
+            "/api/image/img2img/upscale", self.api_img2img_upscale, methods=["POST"]
+        )
+        # 调整-局部重绘
+        self.add_api_route(
+            "/api/image/img2img/inpainting",
+            self.api_img2img_inpainting,
+            methods=["POST"],
+        )
+        # 扩图
+        self.add_api_route(
+            "/api/image/img2img/outpainting",
+            self.api_img2img_outpainting,
+            methods=["POST"],
+        )
 
         # 获取图片列表
         self.add_api_route("/api/image/list", self.api_get_image_list, methods=["POST"])
@@ -61,10 +78,16 @@ class Server(BasicServer):
         self.add_api_route(
             "/api/image/{image_uuid}", self.api_delete_image, methods=["DELETE"]
         )
-        # 获取随机提示词
+
+        # 获取output内的文件
         self.add_api_route(
-            "/api/image/prompt/random", self.api_get_random_prompt, methods=["GET"]
+            "/api/file/output/{filename}", self.api_get_output_file, methods=["GET"]
         )
+
+        # 获取配置
+        self.add_api_route("/api/config", self.api_get_config, methods=["GET"])
+        # 更新配置
+        self.add_api_route("/api/config", self.api_update_config, methods=["PUT"])
 
         logging.info("server init done")
 
@@ -95,35 +118,71 @@ class Server(BasicServer):
             logging.error(f"ws failed, err: {err}")
             traceback.print_exc()
 
-    def api_get_config(self):
-        return ConfigMgr().conf()
+    # 获取随机提示词
+    def api_get_random_prompt(self, lang: str = None):
+        if not lang or len(lang) == 0:
+            lang = "zh-cn"
+        with open("resource/prompt_example.json", "r", encoding="utf-8") as f:
+            examples = json.load(f)
+        index = random.randint(0, len(examples))
+        return GetRandomPromptResponse(data=examples[index][lang])
 
-    def api_update_config(self, request: UpdateConfigRequest):
-        return CommonResponse(data="done")
-
-    def api_get_output_file(self, filename: str, request: Request):
-        file_storage_dir = ConfigMgr().get_conf("storage")["output_file_dir"]
-        return FileResponse(
-            path=f"{file_storage_dir}/{filename}", media_type="image/png"
+    # 获取任务列表
+    def api_image_tasks(self, request: GetImageTasksRequest) -> GetImageTasksResponse:
+        list, total = get_gen_image_task_list_db(
+            page=request.page, page_size=request.page_size
         )
-
-    def api_txt2img(self, request: Txt2imgRequest) -> Txt2imgResponse:
-
-        task_uuid = str(uuid.uuid4())
-        gen_image_worker: GenImageWorker = self.workers[WORKER_GEN_IMAGE]
-        gen_image_worker.add_task(
-            GenImageTask(
-                task_uuid=task_uuid,
-                prompt=request.prompt,
-                negative_prompt=request.negative_prompt,
-                batch_size=request.batch_size,
-                width=request.width,
-                height=request.height,
-                seed=request.seed,
+        return GetImageTasksResponse(
+            data=GetImageListResponse.Data(
+                page=request.page, page_size=request.page_size, total=total, list=list
             )
         )
 
-        return Txt2imgResponse(data=Txt2imgResponseData(task_uuid=task_uuid))
+    # 文生图、调整-重新生成
+    def api_txt2img(self, request: Txt2imgRequest) -> Txt2imgResponse:
+
+        # add task to db
+        task_id = add_gen_image_task_db(
+            task_type=TASK_TYPE_TXT2IMG,
+            task_tags=request.task_tags,
+            origin_prompt=request.origin_prompt,
+            negative_prompt=request.negative_prompt,
+            batch_size=request.batch_size,
+            width=request.width,
+            height=request.height,
+            seed=request.seed,
+            steps=request.steps,
+            cfg=request.cfg,
+            sampler_name=request.sampler_name,
+            scheduler=request.scheduler,
+            denoise=request.denoise,
+            ckpt_name=request.ckpt_name,
+        )
+        logging.debug(f"new txt2img task, add to db done, id: {task_id}")
+
+        # add task to work
+        gen_image_worker: GenImageWorker = self.workers[WORKER_GEN_IMAGE]
+        gen_image_worker.add_task(
+            GenImageWorkTask(task_id=id, task_type=TASK_TYPE_TXT2IMG)
+        )
+
+        return Txt2imgResponse(data=Txt2imgResponse.Data(id=task_id))
+
+    # 变化
+    def api_img2img(self):
+        pass
+
+    # 高清
+    def api_img2img_upscale(self):
+        pass
+
+    # 调整-局部重绘
+    def api_img2img_inpainting(self):
+        pass
+
+    # 扩图
+    def api_img2img_outpainting(self):
+        pass
 
     def api_get_image_list(self, request: GetImageListRequest):
         list, total = get_sd_image_list_db(
@@ -178,10 +237,14 @@ class Server(BasicServer):
             StorageMgr().delete_image(sd_image.name)
         return CommonResponse(data="delete done")
 
-    def api_get_random_prompt(self, lang: str = None):
-        if not lang or len(lang) == 0:
-            lang = "zh-cn"
-        with open("resource/prompt_example.json", "r", encoding="utf-8") as f:
-            examples = json.load(f)
-        index = random.randint(0, len(examples))
-        return GetRandomPromptResponse(data=examples[index][lang])
+    def api_get_output_file(self, filename: str, request: Request):
+        file_storage_dir = ConfigMgr().get_conf("storage")["output_file_dir"]
+        return FileResponse(
+            path=f"{file_storage_dir}/{filename}", media_type="image/png"
+        )
+
+    def api_get_config(self):
+        return ConfigMgr().conf()
+
+    def api_update_config(self, request: UpdateConfigRequest):
+        return CommonResponse(data="done")

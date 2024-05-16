@@ -3,62 +3,93 @@ import uuid
 import json
 import uuid
 import logging
+from enum import Enum
 
 from core.comfyui.basic_client import BasicClient
 from .model import *
 from core.const import *
 from core.models.common import WSEvent
-from core.models.gen_image import *
 from core.server.event import EventDispatcher
 from core.config import ConfigMgr
 
-NAME_SUBMIT_TASK = "任务提交ComfyUI"
-NAME_TASK_NODE_CACHED = "节点任务使用缓存"
-NAME_TASK_NODE_START = "节点任务执行"
-NAME_TASK_NODE_DOING = "节点任务执行中"
-NAME_TASK_DONE = "ComfyUI执行结束"
-NAME_TASK_FAILED = "ComfyUI执行失败"
+class ComfyUIProgressName(Enum):
+    SUBMIT_TASK = "任务提交绘图引擎"
+    TASK_START = "任务开始执行"
+    TASK_DOING = "任务执行中" # prompt_json.keys()
+    TASK_DONE = "任务执行结束"
 
+class ComfyUIEventData(BaseModel):
+    task_id: int
+    progress_name: str
+    progress_tip: Optional[str] = None
+    progress_value: int
+    progress_value_max: int
+    node_id: Optional[str] = None
+    node_progress_value: Optional[int] = None
+    node_progress_value_max: Optional[int] = None
+    err_msg: Optional[str] = None
 
 class ComfyUIClient(BasicClient):
     def __init__(self) -> None:
         client_id = str(uuid.uuid4())
         super().__init__(client_id)
 
+        # task scope
+        self.task_id = None
+        self.prompt_json = None
+        self.nodes = []
+        self.nodes_done = []
+    
+    def _reset_task_info(self, nodes, task_id, prompt_json):
+        self.task_id = task_id
+        self.prompt_json = prompt_json
+        self.nodes = nodes
+        self.nodes_done = []
+        
+
     def _update_progress(self, event_data: ComfyUIEventData):
         EventDispatcher().dispatch_event(
-            f"{EVENT_TYPE_INTERNAL_COMFYUI}_{event_data.task_uuid}",
+            f"{EVENT_TYPE_INTERNAL_COMFYUI}_{event_data.task_id}",
             event_data,
         )
 
-    def queue_prompt(self, task_uuid, prompt_json, result_image_node_id: str = None):
+    def queue_prompt(self, task_id, prompt_json, result_image_node_id: str = None):
+        
+        self._reset_task_info(nodes=prompt_json.keys(), task_id=task_id, prompt_json=prompt_json)
 
         # queue
         prompt_id = self.post_prompt_api(prompt_json).prompt_id
         logging.debug(
-            f"[comfyui]queue done, prompt_id: {prompt_id}, task_uuid: {task_uuid}"
+            f"[comfyui]queue done, prompt_id: {prompt_id}, task_id: {task_id}"
         )
         self._update_progress(
             ComfyUIEventData(
-                task_uuid=task_uuid,
-                progress_name=NAME_SUBMIT_TASK,
-                progress_value_max=len(prompt_json.keys()) + 2,
+                task_id=task_id,
+                progress_name=ComfyUIProgressName.SUBMIT_TASK,
+                progress_tip="任务已提交绘图引擎",
+                progress_value=1,
+                progress_value_max=1,
             )
         )
 
         # handle progress
-        self._ws_handle_progress(prompt_id, task_uuid, prompt_json)
+        self._ws_handle_progress(prompt_id)
 
         # get result
         return self._get_target_node_images(prompt_id, result_image_node_id)
 
-    def _ws_handle_progress(self, prompt_id: str, task_uuid: str, prompt_json):
+    def _ws_handle_progress(self, prompt_id: str):
         # setup websocket
         ws = websocket.WebSocket()
         server_address = ConfigMgr().get_conf("comfyui")["endpoint"]
         ws.connect(f"ws://{server_address}/ws?clientId={self.client_id}")
         logging.debug(f"[comfyui]ws connect done, client_id: {self.client_id}")
-        progress_value_max = len(prompt_json.keys()) + 2
+
+        # ws msg
+        # execution_start
+        # execution_cached
+        # (executing + progress x n) or executing
+        # executing && node==null
         while True:
             out = ws.recv()
             if not isinstance(out, str):
@@ -66,95 +97,105 @@ class ComfyUIClient(BasicClient):
             message = json.loads(out)
             message_type = message["type"]
             match message_type:
-                case "status":
-                    # {"type": "status", "data": {"status": {"exec_info": {"queue_remaining": 1}}}}
-                    continue
-                case "progress":
+                case "execution_start":
                     data = message["data"]
-                    node_id = data["node"]
                     if data["prompt_id"] != prompt_id:
                         continue
+                    logging.info(f"ws execute start: {prompt_id}")
                     self._update_progress(
                         ComfyUIEventData(
-                            task_uuid=task_uuid,
-                            progress_name=NAME_TASK_NODE_DOING,
-                            progress_tip=f"节点编号{node_id}",
-                            node_id=node_id,
-                            node_progress_value_max=data["max"],
-                            node_progress_value=data["value"],
-                            progress_value_max=progress_value_max,
+                            task_id=self.task_id,
+                            progress_name=ComfyUIProgressName.TASK_START,
+                            progress_tip="绘图引擎开始执行此任务",
+                            progress_value=1,
+                            progress_value_max=1,
                         )
                     )
+                    continue
+                case "execution_cached":
+                    data = message["data"]
+                    if data["prompt_id"] != prompt_id:
+                        continue
+                    logging.debug(f"execution_cached: {data}")
+                    self.nodes_done = data["nodes"]
+                    continue
                 case "executing":
                     data = message["data"]
                     node_id = data["node"]
                     if "prompt_id" in data and data["prompt_id"] != prompt_id:
                         continue
                     if node_id is None:
-                        logging.info(f"ws execute done: {prompt_id}")
+                        logging.debug(f"ws execute done: {prompt_id}")
+                        if len(self.nodes_done) != len(self.nodes):
+                            raise Exception("task status not expect, len(self.nodes_done) != len(self.nodes)")
                         self._update_progress(
                             ComfyUIEventData(
-                                task_uuid=task_uuid,
-                                progress_name=NAME_TASK_DONE,
-                                progress_value_max=progress_value_max,
+                                task_id=self.task_id,
+                                progress_name=ComfyUIProgressName.TASK_DOING,
+                                progress_tip=f"工作流执行完成",
+                                progress_value=len(self.nodes_done),
+                                progress_value_max=len(self.nodes),
                             )
                         )
                         break
-                    logging.info(f"ws execute doing: {prompt_id}")
+                    logging.debug(f"ws execute doing: {prompt_id}")
                     self._update_progress(
                         ComfyUIEventData(
-                            task_uuid=task_uuid,
-                            progress_name=NAME_TASK_NODE_START,
-                            progress_tip=f"节点编号{node_id}",
-                            node_id=node_id,
-                            progress_value_max=progress_value_max,
+                            task_id=self.task_id,
+                            progress_name=ComfyUIProgressName.TASK_DOING,
+                            progress_tip=f"节点{node_id}开始执行",
+                            progress_value=len(self.nodes_done) + 1,
+                            progress_value_max=len(self.nodes),
                         )
                     )
                     continue
-
-                case "executed":
-                    # {"type": "executed", "data": {"node": "11", "output": {"images": [{"filename": "ComfyUI_temp_igimx_00013_.png", "subfolder": "", "type": "temp"}]}, "prompt_id": "86534afa-32ee-4359-82af-00c29b484a21"}}
+                case "progress":
+                    data = message["data"]
+                    node_id = data["node"]
+                    if data["prompt_id"] != prompt_id:
+                        continue
+                    logging.debug(f"progress: {data}")
+                    self._update_progress(
+                        ComfyUIEventData(
+                            task_id=self.task_id,
+                            progress_name=ComfyUIProgressName.TASK_DOING,
+                            progress_tip=f"节点{node_id}执行中",
+                            progress_value=len(self.nodes_done) + 1,
+                            progress_value_max=len(self.nodes),
+                            node_id=node_id,
+                            node_progress_value_max=data["max"],
+                            node_progress_value=data["value"],
+                        )
+                    )
+                    if data["max"] == data["value"]:
+                        logging.debug(f"node {node_id} exec done")
+                        self.nodes_done.append(node_id)
                     continue
-                case "execution_start":
-                    logging.info(f"ws execute start: {prompt_id}")
+                case "executed": # 节点有output
+                    # {"type": "executed", "data": {"node": "11", "output": {"images": [{"filename": "ComfyUI_temp_igimx_00013_.png", "subfolder": "", "type": "temp"}]}, "prompt_id": "86534afa-32ee-4359-82af-00c29b484a21"}}
+                    data = message["data"]
+                    if data["prompt_id"] != prompt_id:
+                        continue
+                    logging.info(f"executed: {data}")
                     continue
                 case "execution_error":
                     data = message["data"]
                     exception_message = data["exception_message"]
                     self._update_progress(
                         ComfyUIEventData(
-                            task_uuid=task_uuid,
-                            progress_name=NAME_TASK_FAILED,
+                            task_id=self.task_id,
+                            progress_name=ComfyUIProgressName.TASK_DOING,
+                            progress_tip="执行失败",
+                            progress_value=len(self.nodes_done) + 1,
+                            progress_value_max=len(self.nodes),
                             err_msg=exception_message,
-                            progress_value_max=progress_value_max,
                         )
                     )
                     raise Exception(
                         f"ws execute error: {prompt_id}, exception_message:   {exception_message}"
                     )
-                case "execution_cached":
-                    data = message["data"]
-                    logging.info(f"execution_cached: {data}")
-                    if data["prompt_id"] != prompt_id:
-                        continue
-                    nodes = data["nodes"]
-                    self._update_progress(
-                        ComfyUIEventData(
-                            task_uuid=task_uuid,
-                            progress_name=NAME_TASK_NODE_CACHED,
-                            progress_tip=f"节点任务使用缓存",
-                            cached_nodes=nodes,
-                            progress_value_max=progress_value_max,
-                        )
-                    )
-                    continue
-                case "crystools.monitor":
-                    # data = message["data"]
-                    # monitor_data = CrystoolsMonitor.model_validate(data)
-                    # TODO
-                    continue
                 case _:
-                    logging.debug(f"ws ignore message_type: {message_type}")
+                    # TODO: add more
                     continue
         logging.debug(f"[comfyui]exex done, prompt_id: {prompt_id}")
         ws.close()

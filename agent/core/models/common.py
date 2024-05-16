@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Dict, List, Union, Any, Optional
 from pydantic import BaseModel
 
 
@@ -13,15 +13,14 @@ class PageInfoRequest(BaseModel):
     page_size: int
 
 
-class PageInfoResponseData(BaseModel):
-    page: int
-    page_size: int
-    total: int
-    list: Optional[Any] = []
-
-
 class PageInfoResponse(CommonResponse):
-    data: Optional[PageInfoResponseData] = None
+    class Data(BaseModel):
+        page: int
+        page_size: int
+        total: int
+        list: Optional[Any] = []
+
+    data: Optional[Data] = None
 
 
 #
