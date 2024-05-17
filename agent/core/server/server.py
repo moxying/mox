@@ -45,6 +45,7 @@ class Server(BasicServer):
         )
         # 获取任务列表
         self.add_api_route("/api/image/tasks", self.api_image_tasks, methods=["POST"])
+
         # 文生图、调整-重新生成
         self.add_api_route("/api/image/txt2img", self.api_txt2img, methods=["POST"])
         # 变化
@@ -66,8 +67,37 @@ class Server(BasicServer):
             methods=["POST"],
         )
 
-        # 获取图片列表
-        self.add_api_route("/api/image/list", self.api_get_image_list, methods=["POST"])
+        # 获取收藏夹列表
+        self.add_api_route(
+            "/api/image/collections",
+            self.api_get_collection_list,
+            methods=["GET"],
+        )
+        # 创建收藏夹
+        self.add_api_route(
+            "/api/image/collection",
+            self.api_add_image_collection,
+            methods=["POST"],
+        )
+        # 删除收藏夹
+        self.add_api_route(
+            "/api/image/collection",
+            self.api_delete_image_collection,
+            methods=["DELETE"],
+        )
+        # 添加到收藏夹
+        self.add_api_route(
+            "/api/image/collection/add",
+            self.api_add_images_to_collection,
+            methods=["POST"],
+        )
+        # 从收藏夹移除
+        self.add_api_route(
+            "/api/image/collection/delete",
+            self.api_delete_images_from_collection,
+            methods=["POST"],
+        )
+
         # 按日期分类的图片列表
         self.add_api_route(
             "/api/image/list/fragment",
@@ -133,7 +163,7 @@ class Server(BasicServer):
             page=request.page, page_size=request.page_size
         )
         return GetImageTasksResponse(
-            data=GetImageListResponse.Data(
+            data=GetImageTasksResponse.Data(
                 page=request.page, page_size=request.page_size, total=total, list=list
             )
         )
@@ -141,9 +171,11 @@ class Server(BasicServer):
     # 文生图、调整-重新生成
     def api_txt2img(self, request: Txt2imgRequest) -> Txt2imgResponse:
 
+        logging.debug(f"api_txt2img request: {request.model_dump_json()}")
+
         # add task to db
         task_id = add_gen_image_task_db(
-            task_type=TaskType.TXT2IMG,
+            task_type=TaskType.TXT2IMG.value,
             task_tags=request.task_tags,
             origin_prompt=request.origin_prompt,
             negative_prompt=request.negative_prompt,
@@ -163,7 +195,7 @@ class Server(BasicServer):
         # add task to work
         gen_image_worker: GenImageWorker = self.workers[WORKER_GEN_IMAGE]
         gen_image_worker.add_task(
-            GenImageWorkerTask(task_id=id, task_type=TaskType.TXT2IMG)
+            GenImageWorkerTask(task_id=task_id, task_type=TaskType.TXT2IMG)
         )
 
         return Txt2imgResponse(data=Txt2imgResponse.Data(id=task_id))
@@ -184,21 +216,39 @@ class Server(BasicServer):
     def api_img2img_outpainting(self):
         pass
 
-    def api_get_image_list(self, request: GetImageListRequest):
-        list, total = get_sd_image_list_db(
-            page=request.page, page_size=request.page_size
-        )
-        return GetImageListResponse(
-            data=GetImageListResponseData(
-                page=request.page, page_size=request.page_size, total=total, list=list
-            )
-        )
+    # 获取收藏夹列表
+    def api_get_collection_list(self):
+        collections = get_image_collection_list()
+        return CommonResponse(data=collections)
+
+    # 创建收藏夹
+    def api_add_image_collection(self, request: AddCollectionRequest):
+        add_image_collection(request.name)
+        return CommonResponse()
+
+    # 删除收藏夹
+    def api_delete_image_collection(self, request: DeleteCollectionRequest):
+        delete_image_collection(request.name)
+        return CommonResponse()
+
+    # 添加到收藏夹
+    def api_add_images_to_collection(self, request: AddImagesToCollectionRequest):
+        add_images_to_collection(request.image_uuid_list, request.name)
+        return CommonResponse()
+
+    # 从收藏夹移除
+    def api_delete_images_from_collection(
+        self, request: DeleteImagesFromCollectionRequest
+    ):
+        delete_images_from_collection(request.image_uuid_list, request.name)
+        return CommonResponse()
 
     def api_get_image_list_as_fragment(self, request: GetImageListAsFragmentRequest):
         list, total = get_sd_image_list_db(
             page=request.page,
             page_size=request.page_size,
             timestamp_filter=request.timestamp_filter,
+            collection_filter=request.collection_filter,
         )
 
         # iter array to fragment, group by date

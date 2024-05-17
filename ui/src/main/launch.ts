@@ -541,9 +541,10 @@ export async function launchInit(mainWindow: BrowserWindow) {
   }
 
   if (platform.isLinux) {
-    throw new Error('暂不支持MacOS系统')
-  } else if (platform.isMacOS) {
     throw new Error('暂不支持Linux系统')
+  } else if (platform.isMacOS) {
+    // throw new Error('暂不支持MacOS系统')
+    return
   } else if (platform.isWindows) {
     await launchInitWin(mainWindow)
   } else {

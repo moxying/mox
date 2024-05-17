@@ -19,7 +19,7 @@ class BasicTxt2imgTask(BaseModel):
     steps: Optional[int] = 5
     cfg: Optional[float] = 2.0
     sampler_name: Optional[str] = "dpmpp_sde"
-    scheduler: Optional[str] = "scheduler"
+    scheduler: Optional[str] = "normal"
     denoise: Optional[float] = 1.0
     batch_size: int = 4
     width: Optional[int] = 1024
@@ -94,11 +94,15 @@ def run(
     # queue prompt
     try:
         comfyui_result = comfyui_client.queue_prompt(
-            task.task_uuid, prompt_json, result_image_node_id="10"
+            task.task_id, prompt_json, result_image_node_id="10"
         )
     except Exception as err:
         traceback.print_exc()
-        return BasicTxt2imgTaskResult(err_msg=f"comfyui queue prompt failed: {err}")
+        return BasicTxt2imgTaskResult(
+            err_msg=f"comfyui queue prompt failed: {err}",
+            task_id=task.task_id,
+            prompt=task.prompt,
+        )
     logging.info(f"BasicTxt2imgTask get images len: {len(comfyui_result)}")
     return BasicTxt2imgTaskResult(
         images=comfyui_result,

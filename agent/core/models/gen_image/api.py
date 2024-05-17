@@ -28,12 +28,12 @@ class Txt2imgRequest(BaseModel):
     steps: Optional[int] = 5
     cfg: Optional[float] = 2.0
     sampler_name: Optional[str] = "dpmpp_sde"
-    scheduler: Optional[str] = "scheduler"
+    scheduler: Optional[str] = "normal"
     denoise: Optional[float] = 1.0
     batch_size: Optional[int] = 4
     width: Optional[int] = 1024
     height: Optional[int] = 1024
-    task_tags: Optional[dict] = None
+    task_tags: Optional[dict] = {}
 
 
 class Txt2imgResponse(CommonResponse):
@@ -41,6 +41,24 @@ class Txt2imgResponse(CommonResponse):
         id: int
 
     data: Optional[Data] = None
+
+
+class AddCollectionRequest(BaseModel):
+    name: str
+
+
+class DeleteCollectionRequest(BaseModel):
+    name: str
+
+
+class AddImagesToCollectionRequest(BaseModel):
+    name: str
+    image_uuid_list: List[str]
+
+
+class DeleteImagesFromCollectionRequest(BaseModel):
+    name: str
+    image_uuid_list: List[str]
 
 
 class GenImageResultRequest(BaseModel):
@@ -65,6 +83,7 @@ class GetImageListResponse(PageInfoResponse):
 
 class GetImageListAsFragmentRequest(PageInfoRequest):
     timestamp_filter: Optional[int] = None
+    collection_filter: Optional[str] = None
 
 
 class SDImageFragment(BaseModel):

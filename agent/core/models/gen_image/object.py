@@ -11,14 +11,6 @@ class TaskType(Enum):
     TXT2IMG = "txt2img"
 
 
-class ImageCollection(BaseModel):
-    id: int
-    created_at: datetime
-    updated_at: datetime
-
-    name: str
-
-
 class SDImage(BaseModel):
     id: int
     created_at: datetime
@@ -29,8 +21,8 @@ class SDImage(BaseModel):
     origin_prompt: str
     image_file_deleted: bool
     task_type: str
-    task_tags: Optional[List[str]] = None
-    collections: Optional[List[str]] = None
+    task_tags: Optional[dict] = None
+    collections: Optional[dict] = None
 
     prompt: str
     negative_prompt: Optional[str] = None
@@ -48,13 +40,25 @@ class SDImage(BaseModel):
         from_attributes = True
 
 
+class ImageCollection(BaseModel):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    name: str
+    # sd_images: Optional[List[SDImage]] = None
+
+    class Config:
+        from_attributes = True
+
+
 class GenImageTask(BaseModel):
     id: int
     created_at: datetime
     updated_at: datetime
 
     task_type: str
-    task_tags: Optional[dict] = None
+    task_tags: Optional[dict] = {}
     task_status: str
     err_msg: Optional[str] = None
     origin_prompt: str
@@ -73,6 +77,9 @@ class GenImageTask(BaseModel):
     ckpt_name: Optional[str] = None
 
     result_images: Optional[List[SDImage]] = None
+
+    class Config:
+        from_attributes = True
 
 
 class GenImageWorkerTask(BaseModel):

@@ -1,7 +1,17 @@
 from typing import List
 from typing import Dict, List, Union, Any, Optional
-from sqlalchemy import Integer, String, ForeignKey, DateTime, Boolean, Float, JSON
-from sqlalchemy.orm import mapped_column, Mapped, relationship
+from sqlalchemy import (
+    Table,
+    Column,
+    Integer,
+    String,
+    ForeignKey,
+    DateTime,
+    Boolean,
+    Float,
+    JSON,
+)
+from sqlalchemy.orm import mapped_column, Mapped, relationship, joinedload
 from sqlalchemy.dialects.sqlite import TEXT
 import uuid
 
@@ -11,10 +21,13 @@ from core.const import *
 from .object import *
 
 
-class ImageCollectionDB(Base):
-    __tablename__ = "image_collection"
-
-    name: Mapped[String] = mapped_column(String(256), default="", unique=True)
+# 定义关联表
+sd_image_collection_association = Table(
+    "sd_image_collection",
+    Base.metadata,
+    Column("sd_image_id", Integer, ForeignKey("sd_image.id")),
+    Column("collection_id", Integer, ForeignKey("image_collection.id")),
+)
 
 
 class SDImageDB(Base):
@@ -25,8 +38,12 @@ class SDImageDB(Base):
     origin_prompt: Mapped[TEXT] = mapped_column(TEXT, default="")
     image_file_deleted: Mapped[Boolean] = mapped_column(Boolean, default=False)
     task_type: Mapped[String] = mapped_column(String(64), default="")
-    task_tags: Mapped[JSON] = mapped_column(JSON, default="{}")
-    collections: Mapped[JSON] = mapped_column(JSON, default="{}")
+    task_tags: Mapped[JSON] = mapped_column(
+        JSON, default={}
+    )  # {"task_tags": ["a", "b"]}
+    collections: Mapped[JSON] = mapped_column(
+        JSON, default={}
+    )  # {"collections": ["a", "b"]}
 
     prompt: Mapped[TEXT] = mapped_column(TEXT, default="")
     negative_prompt: Mapped[TEXT] = mapped_column(TEXT, default="")
@@ -40,7 +57,29 @@ class SDImageDB(Base):
     denoise: Mapped[Float] = mapped_column(Float, default=0.0)
     ckpt_name: Mapped[String] = mapped_column(String(512), default="")
 
-    gen_image_task_id = mapped_column(Integer, ForeignKey("gen_image_task.id"))
+    # Many-to-one relationship
+    gen_image_task_id = Column(Integer, ForeignKey("gen_image_task.id"))
+    gen_image_task = relationship("GenImageTaskDB", back_populates="result_images")
+
+    # Many-to-Many relationship
+    collections = relationship(
+        "ImageCollectionDB",
+        secondary=sd_image_collection_association,
+        back_populates="sd_images",
+    )
+
+
+class ImageCollectionDB(Base):
+    __tablename__ = "image_collection"
+
+    name: Mapped[String] = mapped_column(String(256), default="", unique=True)
+
+    # Many-to-Many relationship
+    sd_images = relationship(
+        "SDImageDB",
+        secondary=sd_image_collection_association,
+        back_populates="collections",
+    )
 
 
 class GenImageTaskDB(Base):
@@ -48,7 +87,9 @@ class GenImageTaskDB(Base):
     __tablename__ = "gen_image_task"
 
     task_type: Mapped[String] = mapped_column(String(64), default="")
-    task_tags: Mapped[JSON] = mapped_column(JSON, default="{}")
+    task_tags: Mapped[JSON] = mapped_column(
+        JSON, default="{}"
+    )  # {"task_tags": ["a", "b"]}
     task_status: Mapped[String] = mapped_column(String(64), default="")
     err_msg: Mapped[TEXT] = mapped_column(TEXT, default="")
     origin_prompt: Mapped[TEXT] = mapped_column(TEXT, default="")
@@ -67,7 +108,8 @@ class GenImageTaskDB(Base):
     denoise: Mapped[Float] = mapped_column(Float, default=0.0)
     ckpt_name: Mapped[String] = mapped_column(String(512), default="")
 
-    result_images = relationship("SDImageDB")
+    # One-to-many relationship
+    result_images = relationship("SDImageDB", back_populates="gen_image_task")
 
 
 def add_gen_image_task_db(
@@ -111,9 +153,10 @@ def add_gen_image_task_db(
 
 def get_gen_image_task_db(task_id: int) -> GenImageTask:
     with get_session() as s:
-        gen_image_task = (
+        gen_image_task: GenImageTaskDB = (
             s.query(GenImageTaskDB).filter(GenImageTaskDB.id == task_id).one()
         )
+        print(gen_image_task)
         return GenImageTask.model_validate(gen_image_task)
 
 
@@ -217,7 +260,9 @@ def get_sd_image_list_db(
                 SDImageDB.created_at < datetime.fromtimestamp(timestamp_filter)
             )
         if collection_filter and len(collection_filter) != 0:
-            q = q.filter(SDImageDB.collections.has_key(collection_filter))
+            q = q.filter(
+                SDImageDB.collections["collections"].contains(collection_filter)
+            )
 
         total = q.count()
         q = q.order_by(SDImageDB.created_at.desc())
@@ -269,4 +314,24 @@ def add_image_collection(name: str):
 def delete_image_collection(name: str):
     with get_session() as s:
         s.query(ImageCollectionDB).filter(ImageCollectionDB.name == name).delete()
+        s.commit()
+
+
+def add_images_to_collection(image_uuid_list: List[str], name: str):
+    with get_session() as s:
+        q = s.query(ImageCollectionDB)
+        collection = q.filter(ImageCollectionDB.name == name).one()
+        for image_uuid in image_uuid_list:
+            image = s.query(SDImageDB).filter(SDImageDB.uuid == image_uuid).one()
+            collection.sd_images.append(image)
+        s.commit()
+
+
+def delete_images_from_collection(image_uuid_list: List[str], name: str):
+    with get_session() as s:
+        q = s.query(ImageCollectionDB)
+        collection = q.filter(ImageCollectionDB.name == name).one()
+        for image_uuid in image_uuid_list:
+            image = s.query(SDImageDB).filter(SDImageDB.uuid == image_uuid).one()
+            collection.sd_images.remove(image)
         s.commit()

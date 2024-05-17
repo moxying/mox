@@ -9,3 +9,10 @@ def save_upload_file(upload_file: UploadFile, destination: Path) -> None:
             shutil.copyfileobj(upload_file.file, buffer)
     finally:
         upload_file.file.close()
+
+
+def get_value_index_in_enum(value, enum_class):
+    for index, item in enumerate(enum_class):
+        if item.value == value:
+            return index
+    return None

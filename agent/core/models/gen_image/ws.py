@@ -13,7 +13,7 @@ TOPIC_GENIMAGE_FAILED = "genimage_failed"
 
 class GenImageEvent(WSEvent):
     class Data(BaseModel):
-        task_id: str
+        task_id: int
 
         # progress
         progress_name: Optional[str] = None

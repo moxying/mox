@@ -183,7 +183,7 @@ class BasicClient:
         resp = self.session.post(f"http://{server_address}/prompt", data=data)
         if resp.status_code != 200:
             raise Exception(
-                f"post_prompt_api failed, status_code: {resp.status_code}, {resp}"
+                f"post_prompt_api failed, status_code: {resp.status_code}, {resp.json()}"
             )
         return PostPromptResponse.model_validate(resp.json())
 

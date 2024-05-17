@@ -6,6 +6,7 @@ from pydantic import BaseModel
 import uuid
 import os
 from enum import Enum
+import traceback
 
 from core.config import ConfigMgr
 from core.comfyui.comfyui_client import ComfyUIClient
@@ -22,7 +23,7 @@ from core.storage.storage_mgr import StorageMgr
 from core.comfyui.comfyui_client import *
 from core.utils.translator import Translator
 from core.utils.unionenum import enum_union
-
+from core.utils.utils import get_value_index_in_enum
 
 class GenImageWorkerProgressNameBefore(Enum):
     START = "任务开始"
@@ -65,7 +66,7 @@ class GenImageWorker(threading.Thread):
                             task_id=new_task.task_id,
                             progress_name=TOPIC_GENIMAGE_PROGRESS,
                             progress_tip=GenImageWorkerProgressNameBefore.START.value,
-                            progress_value=len(GenImageWorkerProgressName).index(
+                            progress_value=list(GenImageWorkerProgressName).index(
                                 GenImageWorkerProgressNameBefore.START
                             ),
                             progress_value_max=len(GenImageWorkerProgressName),
@@ -79,7 +80,7 @@ class GenImageWorker(threading.Thread):
 
                 match new_task.task_type:
                     case TaskType.TXT2IMG:
-                        prompt = (Translator().run(gen_image_task.prompt),)
+                        prompt = Translator().run(gen_image_task.prompt)
                         EventDispatcher().dispatch_event(
                             EVENT_TYPE_WS,
                             WSEvent(
@@ -88,7 +89,7 @@ class GenImageWorker(threading.Thread):
                                     task_id=new_task.task_id,
                                     progress_name=TOPIC_GENIMAGE_PROGRESS,
                                     progress_tip=GenImageWorkerProgressNameBefore.TRANSLATION.value,
-                                    progress_value=len(
+                                    progress_value=list(
                                         GenImageWorkerProgressName
                                     ).index(
                                         GenImageWorkerProgressNameBefore.TRANSLATION
@@ -121,8 +122,9 @@ class GenImageWorker(threading.Thread):
                             logging.error(err_msg)
                             # update task status to db
                             update_gen_image_task_status(
-                                TASK_FAILED,
-                                err_msg,
+                                task_id=gen_image_task.id,
+                                task_status=TASK_FAILED,
+                                err_msg=err_msg,
                             )
                             EventDispatcher().remove_event_listener(
                                 f"{EVENT_TYPE_INTERNAL_COMFYUI}_{new_task.task_id}",
@@ -162,8 +164,9 @@ class GenImageWorker(threading.Thread):
                             scheduler=basic_txt2img_task_result.scheduler,
                             denoise=basic_txt2img_task_result.denoise,
                             ckpt_name=basic_txt2img_task_result.ckpt_name,
+                            gen_image_task_id=gen_image_task.id,
                         )
-                        update_gen_image_task_status(TASK_DONE)
+                        update_gen_image_task_status(task_id=gen_image_task.id,task_status=TASK_DONE)
                     case _:
                         logging.warning(
                             f"not support target task type: {new_task.task_type}, task id: {new_task.task_id}"
@@ -185,6 +188,7 @@ class GenImageWorker(threading.Thread):
                 )
                 logging.info(f"GenImageWorker task done, task_id: {new_task.task_id}")
             except Exception as err:
+                traceback.print_exc()
                 logging.error(f"GenImageWorker loop err: {err}")
                 continue
 
@@ -204,9 +208,7 @@ class GenImageWorker(threading.Thread):
                     task_id=event.task_id,
                     progress_name=TOPIC_GENIMAGE_PROGRESS,
                     progress_tip=progress_tip,
-                    progress_value=len(GenImageWorkerProgressName).index(
-                        event.progress_name
-                    ),
+                    progress_value=get_value_index_in_enum(event.progress_name, GenImageWorkerProgressName),
                     progress_value_max=len(GenImageWorkerProgressName),
                 ),
             ),

@@ -42,12 +42,14 @@ class ComfyUIClient(BasicClient):
         self.prompt_json = None
         self.nodes = []
         self.nodes_done = []
+        self.cur_exec_node = None
 
     def _reset_task_info(self, nodes, task_id, prompt_json):
         self.task_id = task_id
         self.prompt_json = prompt_json
         self.nodes = nodes
         self.nodes_done = []
+        self.cur_exec_node = None
 
     def _update_progress(self, event_data: ComfyUIEventData):
         EventDispatcher().dispatch_event(
@@ -55,10 +57,10 @@ class ComfyUIClient(BasicClient):
             event_data,
         )
 
-    def queue_prompt(self, task_id, prompt_json, result_image_node_id: str = None):
+    def queue_prompt(self, task_id: int, prompt_json, result_image_node_id: str = None):
 
         self._reset_task_info(
-            nodes=prompt_json.keys(), task_id=task_id, prompt_json=prompt_json
+            nodes=list(prompt_json.keys()), task_id=task_id, prompt_json=prompt_json
         )
 
         # queue
@@ -128,21 +130,28 @@ class ComfyUIClient(BasicClient):
                         continue
                     if node_id is None:
                         logging.debug(f"ws execute done: {prompt_id}")
-                        if len(self.nodes_done) != len(self.nodes):
-                            raise Exception(
-                                "task status not expect, len(self.nodes_done) != len(self.nodes)"
-                            )
+                        # websocket miss?
+                        # if len(self.nodes_done) != len(self.nodes):
+                        #     raise Exception(
+                        #         f"task status not expect, nodes_done: {self.nodes_done}, nodes: {self.nodes}"
+                        #     )
                         self._update_progress(
                             ComfyUIEventData(
                                 task_id=self.task_id,
                                 progress_name=ComfyUIProgressName.TASK_DOING,
                                 progress_tip=f"工作流执行完成",
-                                progress_value=len(self.nodes_done),
+                                progress_value=len(self.nodes),
                                 progress_value_max=len(self.nodes),
                             )
                         )
                         break
-                    logging.debug(f"ws execute doing: {prompt_id}")
+                    logging.debug(f"ws execute doing: {prompt_id}, node_id: {node_id} ")
+
+                    if self.cur_exec_node:
+                        logging.debug(f"node {self.cur_exec_node} exec done")
+                        self.nodes_done.append(self.cur_exec_node)
+                    self.cur_exec_node = node_id
+
                     self._update_progress(
                         ComfyUIEventData(
                             task_id=self.task_id,
@@ -171,9 +180,6 @@ class ComfyUIClient(BasicClient):
                             node_progress_value=data["value"],
                         )
                     )
-                    if data["max"] == data["value"]:
-                        logging.debug(f"node {node_id} exec done")
-                        self.nodes_done.append(node_id)
                     continue
                 case "executed":  # 节点有output
                     # {"type": "executed", "data": {"node": "11", "output": {"images": [{"filename": "ComfyUI_temp_igimx_00013_.png", "subfolder": "", "type": "temp"}]}, "prompt_id": "86534afa-32ee-4359-82af-00c29b484a21"}}
