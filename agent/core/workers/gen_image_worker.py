@@ -25,9 +25,11 @@ from core.utils.translator import Translator
 from core.utils.unionenum import enum_union
 from core.utils.utils import get_value_index_in_enum
 
+
 class GenImageWorkerProgressNameBefore(Enum):
     START = "任务开始"
-    TRANSLATION = "翻译成中文"
+    TRANSLATION_START = "开始中文识别"
+    TRANSLATION_END = "中文识别成功"
 
 
 class GenImageWorkerProgressNameAfter(Enum):
@@ -80,24 +82,50 @@ class GenImageWorker(threading.Thread):
 
                 match new_task.task_type:
                     case TaskType.TXT2IMG:
-                        prompt = Translator().run(gen_image_task.prompt)
-                        EventDispatcher().dispatch_event(
-                            EVENT_TYPE_WS,
-                            WSEvent(
-                                topic=TOPIC_GENIMAGE_PROGRESS,
-                                data=GenImageEvent.Data(
-                                    task_id=new_task.task_id,
-                                    progress_name=TOPIC_GENIMAGE_PROGRESS,
-                                    progress_tip=GenImageWorkerProgressNameBefore.TRANSLATION.value,
-                                    progress_value=list(
-                                        GenImageWorkerProgressName
-                                    ).index(
-                                        GenImageWorkerProgressNameBefore.TRANSLATION
+                        prompt = gen_image_task.origin_prompt
+                        if (
+                            Translator.detect_language(gen_image_task.origin_prompt)
+                            == "zh-cn"
+                        ):
+                            EventDispatcher().dispatch_event(
+                                EVENT_TYPE_WS,
+                                WSEvent(
+                                    topic=TOPIC_GENIMAGE_PROGRESS,
+                                    data=GenImageEvent.Data(
+                                        task_id=new_task.task_id,
+                                        progress_name=TOPIC_GENIMAGE_PROGRESS,
+                                        progress_tip=GenImageWorkerProgressNameBefore.TRANSLATION_START.value,
+                                        progress_value=list(
+                                            GenImageWorkerProgressName
+                                        ).index(
+                                            GenImageWorkerProgressNameBefore.TRANSLATION_START
+                                        ),
+                                        progress_value_max=len(
+                                            GenImageWorkerProgressName
+                                        ),
                                     ),
-                                    progress_value_max=len(GenImageWorkerProgressName),
                                 ),
-                            ),
-                        )
+                            )
+                            prompt = Translator().run(gen_image_task.origin_prompt)
+                            EventDispatcher().dispatch_event(
+                                EVENT_TYPE_WS,
+                                WSEvent(
+                                    topic=TOPIC_GENIMAGE_PROGRESS,
+                                    data=GenImageEvent.Data(
+                                        task_id=new_task.task_id,
+                                        progress_name=TOPIC_GENIMAGE_PROGRESS,
+                                        progress_tip=GenImageWorkerProgressNameBefore.TRANSLATION_END.value,
+                                        progress_value=list(
+                                            GenImageWorkerProgressName
+                                        ).index(
+                                            GenImageWorkerProgressNameBefore.TRANSLATION_END
+                                        ),
+                                        progress_value_max=len(
+                                            GenImageWorkerProgressName
+                                        ),
+                                    ),
+                                ),
+                            )
                         basic_txt2img_task = BasicTxt2imgTask(
                             task_id=new_task.task_id,
                             prompt=prompt,
@@ -151,7 +179,7 @@ class GenImageWorker(threading.Thread):
                             image_uuid_list.append(image_uuid)
                         add_sd_images_db(
                             uuid_list=image_uuid_list,
-                            format="PNG",
+                            format="png",
                             origin_prompt=gen_image_task.origin_prompt,
                             prompt=basic_txt2img_task_result.prompt,
                             negative_prompt=basic_txt2img_task_result.negative_prompt,
@@ -166,7 +194,9 @@ class GenImageWorker(threading.Thread):
                             ckpt_name=basic_txt2img_task_result.ckpt_name,
                             gen_image_task_id=gen_image_task.id,
                         )
-                        update_gen_image_task_status(task_id=gen_image_task.id,task_status=TASK_DONE)
+                        update_gen_image_task_status(
+                            task_id=gen_image_task.id, task_status=TASK_DONE
+                        )
                     case _:
                         logging.warning(
                             f"not support target task type: {new_task.task_type}, task id: {new_task.task_id}"
@@ -208,7 +238,9 @@ class GenImageWorker(threading.Thread):
                     task_id=event.task_id,
                     progress_name=TOPIC_GENIMAGE_PROGRESS,
                     progress_tip=progress_tip,
-                    progress_value=get_value_index_in_enum(event.progress_name, GenImageWorkerProgressName),
+                    progress_value=get_value_index_in_enum(
+                        event.progress_name, GenImageWorkerProgressName
+                    ),
                     progress_value_max=len(GenImageWorkerProgressName),
                 ),
             ),

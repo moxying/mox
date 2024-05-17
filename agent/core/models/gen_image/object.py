@@ -22,7 +22,6 @@ class SDImage(BaseModel):
     image_file_deleted: bool
     task_type: str
     task_tags: Optional[dict] = None
-    collections: Optional[dict] = None
 
     prompt: str
     negative_prompt: Optional[str] = None

@@ -1,6 +1,8 @@
 from typing import List
 from typing import Dict, List, Union, Any, Optional
+import logging
 from sqlalchemy import (
+    UniqueConstraint,
     Table,
     Column,
     Integer,
@@ -11,8 +13,9 @@ from sqlalchemy import (
     Float,
     JSON,
 )
-from sqlalchemy.orm import mapped_column, Mapped, relationship, joinedload
+from sqlalchemy.orm import mapped_column, Mapped, relationship, joinedload, aliased
 from sqlalchemy.dialects.sqlite import TEXT
+from sqlalchemy.exc import IntegrityError
 import uuid
 
 from core.db.common import Base
@@ -27,6 +30,7 @@ sd_image_collection_association = Table(
     Base.metadata,
     Column("sd_image_id", Integer, ForeignKey("sd_image.id")),
     Column("collection_id", Integer, ForeignKey("image_collection.id")),
+    UniqueConstraint("sd_image_id", "collection_id", name="uq_sd_image_collection"),
 )
 
 
@@ -41,9 +45,6 @@ class SDImageDB(Base):
     task_tags: Mapped[JSON] = mapped_column(
         JSON, default={}
     )  # {"task_tags": ["a", "b"]}
-    collections: Mapped[JSON] = mapped_column(
-        JSON, default={}
-    )  # {"collections": ["a", "b"]}
 
     prompt: Mapped[TEXT] = mapped_column(TEXT, default="")
     negative_prompt: Mapped[TEXT] = mapped_column(TEXT, default="")
@@ -253,6 +254,7 @@ def get_sd_image_list_db(
         offset = page_size * (page - 1)
 
         q = s.query(SDImageDB)
+        q = q.filter(SDImageDB.image_file_deleted == False)
 
         # filter
         if timestamp_filter and timestamp_filter != 0:
@@ -260,8 +262,8 @@ def get_sd_image_list_db(
                 SDImageDB.created_at < datetime.fromtimestamp(timestamp_filter)
             )
         if collection_filter and len(collection_filter) != 0:
-            q = q.filter(
-                SDImageDB.collections["collections"].contains(collection_filter)
+            q = q.join(SDImageDB.collections.of_type(ImageCollectionDB)).filter(
+                ImageCollectionDB.name == collection_filter
             )
 
         total = q.count()
@@ -318,20 +320,61 @@ def delete_image_collection(name: str):
 
 
 def add_images_to_collection(image_uuid_list: List[str], name: str):
-    with get_session() as s:
-        q = s.query(ImageCollectionDB)
-        collection = q.filter(ImageCollectionDB.name == name).one()
-        for image_uuid in image_uuid_list:
-            image = s.query(SDImageDB).filter(SDImageDB.uuid == image_uuid).one()
-            collection.sd_images.append(image)
-        s.commit()
+    try:
+        with get_session() as s:
+            q = s.query(ImageCollectionDB)
+            collection = q.filter(ImageCollectionDB.name == name).first()
+            if not collection:
+                logging.error(
+                    f"add_images_to_collection target collection not exist: {name}"
+                )
+                return
+            for image_uuid in image_uuid_list:
+                image = s.query(SDImageDB).filter(SDImageDB.uuid == image_uuid).first()
+                if not image:
+                    logging.warning(
+                        f"add_images_to_collection, target image not found: {image_uuid}"
+                    )
+                    continue
+                try:
+                    collection.sd_images.append(image)
+                except Exception as err:
+                    logging.warning(
+                        f"add_images_to_collection image: {image_uuid} to collection: {name} failed: {err}"
+                    )
+                    continue
+            s.commit()
+    except Exception as err:
+        logging.warning(f"add_images_to_collection: {name} failed: {err}")
+        return
 
 
 def delete_images_from_collection(image_uuid_list: List[str], name: str):
-    with get_session() as s:
-        q = s.query(ImageCollectionDB)
-        collection = q.filter(ImageCollectionDB.name == name).one()
-        for image_uuid in image_uuid_list:
-            image = s.query(SDImageDB).filter(SDImageDB.uuid == image_uuid).one()
-            collection.sd_images.remove(image)
-        s.commit()
+    try:
+        with get_session() as s:
+            q = s.query(ImageCollectionDB)
+            collection = q.filter(ImageCollectionDB.name == name).first()
+            if not collection:
+                logging.error(
+                    f"delete_images_from_collection target collection not exist: {name}"
+                )
+                return
+            for image_uuid in image_uuid_list:
+                image = s.query(SDImageDB).filter(SDImageDB.uuid == image_uuid).first()
+                if not image:
+                    logging.warning(
+                        f"delete_images_from_collection, target image not found: {image_uuid}"
+                    )
+                    continue
+                try:
+                    collection.sd_images.remove(image)
+                except Exception as err:
+                    logging.warning(
+                        f"delete_images_from_collection image: {image_uuid} from collection: {name} failed: {err}"
+                    )
+                    continue
+
+                s.commit()
+    except Exception as err:
+        logging.warning(f"delete_images_from_collection: {name} failed: {err}")
+        return

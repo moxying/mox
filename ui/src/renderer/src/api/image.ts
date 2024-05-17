@@ -35,9 +35,12 @@ export interface SDImage {
   created_at: string
   updated_at: string
   uuid: string
-  task_uuid: string
-  name: string
+  format: string
   origin_prompt: string
+  image_file_deleted: boolean
+  task_type: string
+  task_tags: object
+
   prompt: string
   negative_prompt: string
   width: number
@@ -47,6 +50,7 @@ export interface SDImage {
   cfg: number
   sampler_name: string
   scheduler: string
+  denoise: number
   ckpt_name: string
 }
 export interface SDImageFragment {

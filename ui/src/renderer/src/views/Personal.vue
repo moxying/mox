@@ -202,7 +202,7 @@ onMounted(() => {
             >
               <img
                 src="@/assets/default-artwork.png"
-                :data-src="imageUrl(sdImage.name)"
+                :data-src="imageUrl(sdImage.uuid + '.' + sdImage.format.toLowerCase())"
                 @click="showImageDetail(sdImage)"
               />
             </div>

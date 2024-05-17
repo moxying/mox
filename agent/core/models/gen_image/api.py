@@ -61,40 +61,19 @@ class DeleteImagesFromCollectionRequest(BaseModel):
     image_uuid_list: List[str]
 
 
-class GenImageResultRequest(BaseModel):
-    task_uuid: str
-
-
-class GenImageResultResponse(CommonResponse):
-    data: List[SDImage]
-
-
-class GetImageListRequest(PageInfoRequest):
-    pass
-
-
-class GetImageListResponseData(PageInfoResponse.Data):
-    list: List[SDImage]
-
-
-class GetImageListResponse(PageInfoResponse):
-    data: Optional[GetImageListResponseData] = None
-
-
 class GetImageListAsFragmentRequest(PageInfoRequest):
     timestamp_filter: Optional[int] = None
     collection_filter: Optional[str] = None
 
 
-class SDImageFragment(BaseModel):
-    date: str
-    list: List[SDImage]
-
-
-class GetImageListAsFragmentResponseData(PageInfoResponse.Data):
-    list: List[SDImageFragment]
-    cur_total: int
-
-
 class GetImageListAsFragmentResponse(PageInfoResponse):
-    data: Optional[GetImageListAsFragmentResponseData] = None
+
+    class Data(PageInfoResponse.Data):
+        class SDImageFragment(BaseModel):
+            date: str
+            list: List[SDImage]
+
+        list: List[SDImageFragment]
+        cur_total: int
+
+    data: Optional[Data] = None

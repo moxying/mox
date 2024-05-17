@@ -62,7 +62,7 @@ const imageUrl = (filename: string | undefined) => {
 <template>
   <div v-if="model" class="modal-container" @wheel="handleWheel">
     <div class="left-panel">
-      <img :src="imageUrl(images[curImageIndex].name)" />
+      <img :src="imageUrl(images[curImageIndex].uuid + '.' + images[curImageIndex].format)" />
     </div>
     <div class="right-panel">
       <div class="detail-panel">

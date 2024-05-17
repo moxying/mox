@@ -223,7 +223,13 @@ class Server(BasicServer):
 
     # 创建收藏夹
     def api_add_image_collection(self, request: AddCollectionRequest):
-        add_image_collection(request.name)
+        try:
+            add_image_collection(request.name)
+        except Exception as err:
+            if "UNIQUE constraint failed" in f"{err}":
+                return CommonResponse(code=ERR_CODE_INVALID_PARAM, msg="名称已经存在")
+            raise err
+
         return CommonResponse()
 
     # 删除收藏夹
@@ -243,6 +249,7 @@ class Server(BasicServer):
         delete_images_from_collection(request.image_uuid_list, request.name)
         return CommonResponse()
 
+    # 按日期分类的图片列表
     def api_get_image_list_as_fragment(self, request: GetImageListAsFragmentRequest):
         list, total = get_sd_image_list_db(
             page=request.page,
@@ -269,9 +276,13 @@ class Server(BasicServer):
         grouped = groupby(list, key=custom_key_func)
         fragments = []
         for key, groupe in grouped:
-            fragments.append(SDImageFragment(date=key, list=groupe))
+            fragments.append(
+                GetImageListAsFragmentResponse.Data.SDImageFragment(
+                    date=key, list=groupe
+                )
+            )
         return GetImageListAsFragmentResponse(
-            data=GetImageListAsFragmentResponseData(
+            data=GetImageListAsFragmentResponse.Data(
                 page=request.page,
                 page_size=request.page_size,
                 total=total,
@@ -284,7 +295,7 @@ class Server(BasicServer):
         sd_image: SDImage = get_sd_image_db(image_uuid)
         if sd_image:
             delete_sd_image_db(image_uuid)
-            StorageMgr().delete_image(sd_image.name)
+            StorageMgr().delete_image(f"{sd_image.uuid}.{sd_image.format}")
         return CommonResponse(data="delete done")
 
     def api_get_output_file(self, filename: str, request: Request):

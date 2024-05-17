@@ -148,20 +148,6 @@ const TOPIC_COMMON_LOG = 'log'
 const TOPIC_GENIMAGE_PROGRESS = 'genimage_progress'
 const TOPIC_GENIMAGE_END = 'genimage_end'
 const TOPIC_GENIMAGE_FAILED = 'genimage_failed'
-// interface GenImageEventData {
-//   task_uuid: string
-//   progress_tip?: string
-//   progress_value?: number
-//   progress_value_max?: number
-//   images?: string[]
-//   err_msg?: string
-// }
-// interface CommonLogEventData {
-//   log: string
-// }
-// interface CommonStatusEventData {
-//   status: string
-// }
 emitter.on('wsEvent', (e: WSEvent) => {
   const eventData = e.data
   switch (e.topic) {
@@ -293,6 +279,7 @@ onUnmounted(() => {
     display: flex;
     flex-direction: column;
     width: calc(100% - 16rem);
+    height: 100%;
     position: relative;
 
     $app-create-bottom-height: 12rem;
