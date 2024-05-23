@@ -207,11 +207,20 @@ onUnmounted(() => {
   WSUtil.ws.close()
   emitter.off('wsEvent')
 })
+const model = ref(true)
 </script>
 
 <template>
   <div class="app-create">
-    <div class="app-create-config"></div>
+    <div class="app-create-config">
+      <v-btn>Button</v-btn>
+      <v-switch
+        v-model="model"
+        :label="`Switch: ${model.toString()}`"
+        hide-details
+        inset
+      ></v-switch>
+    </div>
     <div class="app-create-main">
       <div ref="topPane" class="app-create-top">
         <div
