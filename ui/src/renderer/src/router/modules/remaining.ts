@@ -1,5 +1,5 @@
 // https://github.com/electron-vite/electron-vite-vue/issues/229
-import Layout from '@/views/layout/Layout.vue'
+import Layout from '@/views/Layout.vue'
 import Launch from '@/views/Launch.vue'
 import Create from '@/views/Create.vue'
 import Personal from '@/views/Personal.vue'
