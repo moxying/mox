@@ -8,14 +8,14 @@ import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 
 // 引入重置样式
 import '@/style/reset.scss'
-// 导入公共样式
-import '@/style/common.scss'
 // Vuetify
 import 'vuetify/styles'
 import { createVuetify, type ThemeDefinition } from 'vuetify'
 import { md3 } from 'vuetify/blueprints'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
+// 导入公共样式
+import '@/style/common.scss'
 // ElementPlus
 import 'element-plus/dist/index.css'
 import 'element-plus/theme-chalk/dark/css-vars.css'
@@ -70,6 +70,7 @@ const myCustomLightTheme: ThemeDefinition = {
   }
 }
 const vuetify = createVuetify({
+  ssr: true,
   components,
   directives,
   blueprint: md3,
