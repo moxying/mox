@@ -13,32 +13,28 @@ const menus = ref([{}])
     <v-app>
       <v-app-bar
         color="surface-container"
-        height="36"
+        height="35"
         flat
-        class="border border-b-sm border-error-container"
+        class="border-b-sm border-inverse-on-surface"
+        style="-webkit-app-region: drag"
       ></v-app-bar>
-      <v-main>
-        <div class="mox-layout">
-          <div class="mox-layout-head"></div>
-          <div class="mox-layout-main">
-            <div class="mox-layout-sidebar">
-              <v-navigation-drawer>
-                <v-list>
-                  <v-list-item
-                    prepend-avatar="https://randomuser.me/api/portraits/women/85.jpg"
-                    subtitle="sandra_a88@gmailcom"
-                    title="Sandra Adams"
-                  ></v-list-item>
-                </v-list>
-              </v-navigation-drawer>
-            </div>
-            <div class="mox-layout-content">
-              <router-view />
-            </div>
-          </div>
-          <div class="mox-layout-footer"></div>
+      <v-main class="d-flex">
+        <div>
+          <v-navigation-drawer>
+            <v-list>
+              <v-list-item
+                prepend-avatar="https://randomuser.me/api/portraits/women/85.jpg"
+                subtitle="sandra_a88@gmailcom"
+                title="Sandra Adams"
+              ></v-list-item>
+            </v-list>
+          </v-navigation-drawer>
+        </div>
+        <div>
+          <router-view />
         </div>
       </v-main>
+      <v-footer color="surface-container" height="24">123</v-footer>
     </v-app>
   </v-locale-provider>
 </template>
