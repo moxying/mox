@@ -34,7 +34,7 @@ defineOptions({
     width: 100%;
     height: 2.25rem;
     min-height: 2.25rem;
-    background: $app-header-color;
+    background: var(--v-theme-surface-container);
     -webkit-app-region: drag;
   }
 
@@ -49,7 +49,7 @@ defineOptions({
       width: 3rem;
       min-width: 3rem;
       height: 100%;
-      background: $app-sidebar-color;
+      background: var(--v-theme-surface-container);
     }
     .mox-content {
       width: 100%;
@@ -60,7 +60,7 @@ defineOptions({
     width: 100%;
     height: 1.5rem;
     min-height: 1.5rem;
-    background: $app-footer-color;
+    background: var(--v-theme-surface-container);
   }
 }
 </style>
