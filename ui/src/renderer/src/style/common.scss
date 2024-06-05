@@ -3,6 +3,6 @@ html {
 }
 
 body {
-  background: $app-background-color;
-  color: $app-font-first-color;
+  background: rgb(var(--v-theme-surface-container));
+  color: white;
 }
