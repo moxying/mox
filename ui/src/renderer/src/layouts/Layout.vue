@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import Sidebar from '@/layouts/Sidebar.vue'
 
 defineOptions({
-  name: 'Layout'
+  name: 'Layout',
+  components: {
+    Sidebar
+  }
 })
-
-const menus = ref([{}])
 </script>
 
 <template>
@@ -19,12 +20,14 @@ const menus = ref([{}])
       ></v-app-bar>
       <v-main class="d-flex flex-column" style="width: 100%; height: 100%; padding-top: 2.25rem">
         <div class="d-flex flex-row flex-fill">
-          <div class="" style="height: 100%"></div>
-          <div>
+          <Sidebar />
+          <div style="width: 100%; height: 100%">
             <router-view />
           </div>
         </div>
-        <v-footer class="flex-0-0" color="surface-container" style="height: 1.5rem">123</v-footer>
+        <v-footer class="flex-0-0" color="surface-container" style="height: 1.5rem; padding: 0"
+          >123
+        </v-footer>
       </v-main>
     </v-app>
   </v-locale-provider>

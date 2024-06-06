@@ -30,6 +30,7 @@
     "@electron-toolkit/tsconfig": "^1.0.1",
     "@iconify/tailwind": "^0.1.4",
     "@imengyu/vue3-context-menu": "^1.4.0",
+    "@mdi/js": "^7.4.47",
     "@rushstack/eslint-patch": "^1.7.1",
     "@types/node": "^18.19.9",
     "@vitejs/plugin-vue": "^5.0.3",

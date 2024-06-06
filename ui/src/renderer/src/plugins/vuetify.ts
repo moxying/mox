@@ -3,6 +3,7 @@ import { createVuetify, type ThemeDefinition } from 'vuetify'
 import { md3 } from 'vuetify/blueprints'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
+import { aliases, mdi } from 'vuetify/iconsets/mdi-svg'
 
 const palettes = {
   primary0: '#000000',
@@ -170,6 +171,13 @@ const vuetify = createVuetify({
     defaultTheme: 'moxTheme',
     themes: {
       moxTheme
+    }
+  },
+  icons: {
+    defaultSet: 'mdi',
+    aliases,
+    sets: {
+      mdi
     }
   }
 })

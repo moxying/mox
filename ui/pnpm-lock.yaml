@@ -25,6 +25,9 @@ devDependencies:
   '@imengyu/vue3-context-menu':
     specifier: ^1.4.0
     version: 1.4.0
+  '@mdi/js':
+    specifier: ^7.4.47
+    version: 7.4.47
   '@rushstack/eslint-patch':
     specifier: ^1.7.1
     version: 1.7.2
@@ -876,6 +879,10 @@ packages:
       tmp-promise: 3.0.3
     transitivePeerDependencies:
       - supports-color
+    dev: true
+
+  /@mdi/js@7.4.47:
+    resolution: {integrity: sha512-KPnNOtm5i2pMabqZxpUz7iQf+mfrYZyKCZ8QNz85czgEt7cuHcGorWfdzUMWYA0SD+a6Hn4FmJ+YhzzzjkTZrQ==}
     dev: true
 
   /@nodelib/fs.scandir@2.1.5:
