@@ -130,7 +130,7 @@ const dark = {
   'surface-dim': '#141218'
 }
 
-const myCustomLightTheme: ThemeDefinition = {
+const moxTheme: ThemeDefinition = {
   dark: true,
   colors: {
     background: '#141218',
@@ -167,9 +167,9 @@ const vuetify = createVuetify({
   directives,
   blueprint: md3,
   theme: {
-    defaultTheme: 'myCustomLightTheme',
+    defaultTheme: 'moxTheme',
     themes: {
-      myCustomLightTheme
+      moxTheme
     }
   }
 })

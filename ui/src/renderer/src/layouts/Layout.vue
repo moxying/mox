@@ -13,28 +13,19 @@ const menus = ref([{}])
     <v-app>
       <v-app-bar
         color="surface-container"
-        height="35"
         flat
         class="border-b-sm border-inverse-on-surface"
-        style="-webkit-app-region: drag"
+        style="-webkit-app-region: drag; height: 2.25rem"
       ></v-app-bar>
-      <v-main class="d-flex">
-        <div>
-          <v-navigation-drawer>
-            <v-list>
-              <v-list-item
-                prepend-avatar="https://randomuser.me/api/portraits/women/85.jpg"
-                subtitle="sandra_a88@gmailcom"
-                title="Sandra Adams"
-              ></v-list-item>
-            </v-list>
-          </v-navigation-drawer>
+      <v-main class="d-flex flex-column" style="width: 100%; height: 100%; padding-top: 2.25rem">
+        <div class="d-flex flex-row flex-fill">
+          <div class="" style="height: 100%"></div>
+          <div>
+            <router-view />
+          </div>
         </div>
-        <div>
-          <router-view />
-        </div>
+        <v-footer class="flex-0-0" color="surface-container" style="height: 1.5rem">123</v-footer>
       </v-main>
-      <v-footer color="surface-container" height="24">123</v-footer>
     </v-app>
   </v-locale-provider>
 </template>

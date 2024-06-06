@@ -537,7 +537,7 @@ async function launchInitWin(mainWindow) {
 export async function launchInit(mainWindow: BrowserWindow) {
   if (is.dev) {
     // for test
-    await delay(5000)
+    // await delay(5000)
   }
 
   if (platform.isLinux) {
