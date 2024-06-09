@@ -10,27 +10,21 @@ defineOptions({
 </script>
 
 <template>
-  <v-locale-provider>
-    <v-app>
-      <v-app-bar
-        color="surface-container"
-        flat
-        class="border-b-sm border-inverse-on-surface"
-        style="-webkit-app-region: drag; height: 2.25rem"
-      ></v-app-bar>
-      <v-main class="d-flex flex-column" style="width: 100%; height: 100%; padding-top: 2.25rem">
-        <div class="d-flex flex-row flex-fill">
-          <Sidebar />
-          <div style="width: 100%; height: 100%">
-            <router-view />
-          </div>
-        </div>
-        <v-footer class="flex-0-0" color="surface-container" style="height: 1.5rem; padding: 0"
-          >123
-        </v-footer>
-      </v-main>
-    </v-app>
-  </v-locale-provider>
+  <v-app class="flex flex-col size-full">
+    <div
+      class="flex-none bg-surface-container border-b-[1px] border-inverse-on-surface h-9 w-full"
+      style="-webkit-app-region: drag"
+    >
+      123
+    </div>
+    <div class="flex flex-row size-full">
+      <Sidebar />
+      <div class="size-full">
+        <router-view />
+      </div>
+    </div>
+    <div class="flex-none bg-surface-container h-6">123</div>
+  </v-app>
 </template>
 
 <style lang="scss" scoped>
