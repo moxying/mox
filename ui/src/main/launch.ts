@@ -38,16 +38,20 @@ export interface LaunchEvent {
 export const ErrTriggered = 'launch error event sent'
 
 enum Progress {
+  // git
   CheckGitVersion = 1,
   DownloadGitNewVersion,
   CheckGitNewVersionSha256,
   ExtractGitNewVersion,
   SaveGitNewVersion,
+  // python env
   CheckPythonEnvVersion,
   DownloadPythonEnvNewVersion,
   CheckPythonEnvNewVersionSha256,
   ExtractPythonEnvNewVersion,
   SavePythonEnvNewVersion,
+  // agent
+  UpdateAgent,
   AllDone
 }
 const ProgressMax = Object.keys(Progress).length / 2
@@ -57,6 +61,7 @@ const GitPortableWinDir = path.join(ExtraResourceDir, 'git_portable_win')
 const GitPortableWinInfoFile = path.join(ExtraResourceDir, 'git_portable_win.info.json')
 const PythonEnvWinDir = path.join(ExtraResourceDir, 'python_env_win')
 const PythonEnvWinInfoFile = path.join(ExtraResourceDir, 'python_env_win.info.json')
+const AgentDir = path.join(ExtraResourceDir, 'agent')
 
 async function getGitPortableWinVersion() {
   try {
@@ -320,7 +325,7 @@ async function updatePythonEnvWin(mainWindow) {
   }
 
   if (!needUpdate) {
-    console.info(`[main]git is updated, version: ${curPythonEnvWinVersion}`)
+    console.info(`[main]python env is updated, version: ${curPythonEnvWinVersion}`)
     return
   }
 
@@ -516,12 +521,25 @@ async function updatePythonEnvWin(mainWindow) {
   console.info('[main]update PythonEnv success')
 }
 
+async function updateAgent(mainWindow) {
+  mainWindow.webContents.send('launch-event', {
+    topic: TOPIC_PROGRESS,
+    data: {
+      progressTip: '更新Agent...',
+      progressDetail: '更新中...',
+      progressValue: Progress.UpdateAgent.valueOf(),
+      progressMax: ProgressMax
+    }
+  })
+}
+
 async function launchInitWin(mainWindow) {
   // update git
   await updateGitPortableWin(mainWindow)
-  // download python_env_win
+  // update python_env_win
   await updatePythonEnvWin(mainWindow)
-  // download agent
+  // update agent
+  await updateAgent(mainWindow)
 
   mainWindow.webContents.send('launch-event', {
     topic: TOPIC_PROGRESS,

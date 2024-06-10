@@ -2,7 +2,7 @@ export const config = {
   launch: {
     width: 600,
     height: 300,
-    agentDownloadUrl: '',
+    agentDownloadUrl: 'https://gitcode.com/moxying/mox.git',
     winResource: {
       git: {
         version: 'v0.0.1',
@@ -21,5 +21,9 @@ export const config = {
     }
   },
   width: 1280,
-  height: 720
+  height: 720,
+  dev: {
+    openDevTools: false,
+    useDevAgent: false
+  }
 }
