@@ -5,6 +5,14 @@ import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import { aliases, mdi } from 'vuetify/iconsets/mdi-svg'
 
+// icon
+import {
+  mdiChartBubble as create,
+  mdiWidgetsOutline as engine,
+  mdiAccountBoxOutline as personal,
+  mdiCog as setting
+} from '@mdi/js'
+
 const dark = {
   primary: '#D0BCFF',
   'on-primary': '#381E72',
@@ -94,7 +102,13 @@ const vuetify = createVuetify({
   },
   icons: {
     defaultSet: 'mdi',
-    aliases,
+    aliases: {
+      ...aliases,
+      create,
+      engine,
+      personal,
+      setting
+    },
     sets: {
       mdi
     }

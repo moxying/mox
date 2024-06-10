@@ -18,7 +18,7 @@ defineOptions({
       123
     </div>
     <div class="flex flex-row size-full">
-      <Sidebar />
+      <Sidebar class="flex-none w-12 h-full" />
       <div class="size-full">
         <router-view />
       </div>
@@ -27,48 +27,4 @@ defineOptions({
   </v-app>
 </template>
 
-<style lang="scss" scoped>
-.mox-layout {
-  display: flex;
-  flex-direction: column;
-  justify-content: start;
-  width: 100%;
-  height: 100%;
-
-  .mox-layout-head {
-    display: flex;
-    width: 100%;
-    height: 2.25rem;
-    min-height: 2.25rem;
-    background: rgb(var(--v-theme-surface-container));
-    border-bottom: 1px solid rgb(var(--v-theme-inverse-on-surface));
-    -webkit-app-region: drag;
-  }
-
-  .mox-layout-main {
-    display: flex;
-    flex-direction: row;
-    flex: auto;
-    width: 100%;
-    height: 100%;
-
-    .mox-layout-sidebar {
-      width: 3rem;
-      min-width: 3rem;
-      height: 100%;
-      background: rgb(var(--v-theme-surface-container));
-      border-right: 1px solid rgb(var(--v-theme-inverse-on-surface));
-    }
-    .mox-layout-content {
-      width: 100%;
-      height: 100%;
-    }
-  }
-  .mox-layout-footer {
-    width: 100%;
-    height: 1.5rem;
-    min-height: 1.5rem;
-    background: rgb(var(--v-theme-surface));
-  }
-}
-</style>
+<style lang="scss" scoped></style>

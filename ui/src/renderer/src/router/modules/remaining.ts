@@ -2,6 +2,7 @@
 import Layout from '@/layouts/Layout.vue'
 import Launch from '@/views/Launch.vue'
 import Create from '@/views/Create.vue'
+import Engine from '@/views/Engine.vue'
 import Personal from '@/views/Personal.vue'
 
 export default [
@@ -19,6 +20,11 @@ export default [
         path: 'create',
         name: 'Create',
         component: Create
+      },
+      {
+        path: 'engine',
+        name: 'Engine',
+        component: Engine
       },
       {
         path: 'personal',
