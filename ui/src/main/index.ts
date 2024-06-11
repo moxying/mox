@@ -54,47 +54,50 @@ app.whenReady().then(() => {
     return { action: 'deny' }
   })
 
+  let load_done
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     console.debug(
       `[main]dev mode, load mainWindow by loadURL from ${process.env['ELECTRON_RENDERER_URL']}`
     )
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+    load_done = mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
     if (config.dev.openDevTools) {
       mainWindow.webContents.openDevTools()
     }
   } else {
     console.debug(`[main]production mode, load mainWindow from ../renderer/index.html}`)
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    load_done = mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
 
-  launchInit(mainWindow)
-    .then(() => {
-      // resize window to normal
-      mainWindow.setMinimumSize(config.width, config.height)
-      mainWindow.setSize(config.width, config.height)
-      mainWindow.center()
-      // route to home page
-      mainWindow.webContents.send('launch-event', {
-        topic: TOPIC_END
-      })
-      console.info('[main]launchInit success')
-    })
-    .catch((error) => {
-      console.error('[main]launchInit err:', error)
-      if (error.message && error.message.toLowerCase().includes('launch error event sent')) {
-        return
-      }
-      setTimeout(() => {
+  load_done.then(() => {
+    launchInit(mainWindow)
+      .then(() => {
+        // resize window to normal
+        mainWindow.setMinimumSize(config.width, config.height)
+        mainWindow.setSize(config.width, config.height)
+        mainWindow.center()
+        // route to home page
         mainWindow.webContents.send('launch-event', {
-          topic: TOPIC_FAILED,
-          data: {
-            errMsg: `初始化错误：${error}`
-          }
+          topic: TOPIC_END
         })
-      }, 500)
-    })
+        console.info('[main]launchInit success')
+      })
+      .catch((error) => {
+        console.error('[main]launchInit err:', error)
+        if (error.message && error.message.toLowerCase().includes('launch error event sent')) {
+          return
+        }
+        setTimeout(() => {
+          mainWindow.webContents.send('launch-event', {
+            topic: TOPIC_FAILED,
+            data: {
+              errMsg: `初始化错误：${error}`
+            }
+          })
+        }, 500)
+      })
+  })
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common
