@@ -540,24 +540,9 @@ async function launchInitWin(mainWindow) {
   await updatePythonEnvWin(mainWindow)
   // update agent
   await updateAgent(mainWindow)
-
-  mainWindow.webContents.send('launch-event', {
-    topic: TOPIC_PROGRESS,
-    data: {
-      progressTip: '更新成功',
-      progressDetail: `更新成功`,
-      progressValue: Progress.AllDone.valueOf(),
-      progressMax: ProgressMax
-    }
-  })
 }
 
 export async function launchInit(mainWindow: BrowserWindow) {
-  if (is.dev) {
-    // for test
-    // await delay(5000)
-  }
-
   if (platform.isLinux) {
     throw new Error('暂不支持Linux系统')
   } else if (platform.isMacOS) {
@@ -568,4 +553,16 @@ export async function launchInit(mainWindow: BrowserWindow) {
   } else {
     throw new Error('未知操作系统，暂不支持')
   }
+
+  await delay(5000)
+
+  mainWindow.webContents.send('launch-event', {
+    topic: TOPIC_PROGRESS,
+    data: {
+      progressTip: '更新成功',
+      progressDetail: `更新成功`,
+      progressValue: Progress.AllDone.valueOf(),
+      progressMax: ProgressMax
+    }
+  })
 }

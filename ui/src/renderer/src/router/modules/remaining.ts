@@ -10,7 +10,7 @@ export default [
     path: '/',
     name: 'Layout',
     component: Layout,
-    // redirect: '/launch',
+    redirect: '/launch',
     meta: {
       rank: 0,
       showLink: false

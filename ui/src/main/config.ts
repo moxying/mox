@@ -23,7 +23,7 @@ export const config = {
   width: 1280,
   height: 720,
   dev: {
-    openDevTools: false,
+    openDevTools: true,
     useDevAgent: false
   }
 }

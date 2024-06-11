@@ -39,7 +39,7 @@ window.api.onLaunchEvent((e: LaunchEvent) => {
       })
       break
     default:
-      console.log('unknow event topic')
+      console.log('unknown event topic')
       break
   }
 })
