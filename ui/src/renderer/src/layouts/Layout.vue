@@ -14,17 +14,22 @@ const agentOK = ref(true)
 
 <template>
   <v-app class="flex flex-col size-full">
-    <div
-      class="flex-none bg-surface-container border-b-[1px] border-solid border-inverse-on-surface h-9 w-full"
-      style="-webkit-app-region: drag"
-    ></div>
+    <!-- header -->
+    <div class="flex flex-none bg-surface-container h-9 w-full" style="-webkit-app-region: drag">
+      <div class="w-12" />
+      <div class="w-full border-b-[0.0625rem] border-solid border-inverse-on-surface"></div>
+    </div>
+    <!-- body -->
     <div class="flex flex-row size-full">
+      <!-- sidebar -->
       <Sidebar class="flex-none w-12 h-full" />
-      <div class="size-full">
+      <!-- main content -->
+      <div class="size-full bg-surface-container">
         <router-view />
       </div>
     </div>
-    <div class="flex flex-row flex-none bg-surface-container h-6">
+    <!-- footer -->
+    <div class="flex flex-row flex-none bg-surface h-6">
       <div v-if="agentOK" class="flex flex-row w-8 bg-primary30">
         <v-icon icon="$agentOK" class="items-center ml-1 w-6 h-5 text-outline" />
       </div>

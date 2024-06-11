@@ -27,7 +27,7 @@ const activateMenu = (index) => {
 
 <template>
   <div
-    class="flex flex-col size-full bg-surface-container border-r-[1px] border-solid border-inverse-on-surface"
+    class="flex flex-col size-full bg-surface-container border-r-[0.0625rem] border-solid border-inverse-on-surface"
   >
     <v-list class="size-full p-0" :lines="false" bg-color="surface-container">
       <v-list-item
